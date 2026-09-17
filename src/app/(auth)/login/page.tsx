@@ -1,13 +1,11 @@
 import type { Metadata } from "next";
+import { LoginForm } from "@/features/auth";
 
 export const metadata: Metadata = {
-  title: "Log In",
+  title: "Sign in",
+  description: "Sign in to your NEXORA workspace.",
 };
 
 export default function LoginPage() {
-  return (
-    <div className="w-full max-w-sm p-6 text-center">
-      <h1 className="text-xl font-semibold">Log In</h1>
-    </div>
-  );
+  return <LoginForm />;
 }

@@ -1,0 +1,259 @@
+"use client";
+
+import * as React from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+  CardFooter,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { AlertCircle, CheckCircle2, Mail } from "lucide-react";
+import { signupAction } from "../actions/signup";
+import { signupSchema, type SignupInput } from "../schemas/auth";
+
+export function SignupForm() {
+  const router = useRouter();
+  const [formData, setFormData] = React.useState<SignupInput>({
+    email: "",
+    fullName: "",
+    password: "",
+    confirmPassword: "",
+  });
+  const [errors, setErrors] = React.useState<Record<string, string>>({});
+  const [generalError, setGeneralError] = React.useState<string | null>(null);
+  const [isSuccessConfirmation, setIsSuccessConfirmation] = React.useState(false);
+  const [isLoading, setIsLoading] = React.useState(false);
+
+  function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+
+    if (errors[name]) {
+      setErrors((prev) => {
+        const next = { ...prev };
+        delete next[name];
+        return next;
+      });
+    }
+    if (generalError) {
+      setGeneralError(null);
+    }
+  }
+
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setGeneralError(null);
+
+    // Client-side Zod validation
+    const clientValidation = signupSchema.safeParse(formData);
+    if (!clientValidation.success) {
+      const fieldErrors: Record<string, string> = {};
+      const flattened = clientValidation.error.flatten().fieldErrors;
+      for (const [key, messages] of Object.entries(flattened)) {
+        if (messages && messages[0]) {
+          fieldErrors[key] = messages[0];
+        }
+      }
+      setErrors(fieldErrors);
+      return;
+    }
+
+    setErrors({});
+    setIsLoading(true);
+
+    try {
+      const result = await signupAction(clientValidation.data);
+
+      if (!result.success) {
+        if (result.fieldErrors) {
+          const fieldErrors: Record<string, string> = {};
+          for (const [key, messages] of Object.entries(result.fieldErrors)) {
+            if (messages && messages[0]) {
+              fieldErrors[key] = messages[0];
+            }
+          }
+          setErrors(fieldErrors);
+        }
+        setGeneralError(result.error || "Unable to create account. Please try again.");
+        setIsLoading(false);
+        return;
+      }
+
+      if (result.requiresConfirmation) {
+        setIsSuccessConfirmation(true);
+        setIsLoading(false);
+        return;
+      }
+
+      router.push(result.redirectTo || "/app");
+      router.refresh();
+    } catch {
+      setGeneralError("An unexpected connection error occurred. Please try again.");
+      setIsLoading(false);
+    }
+  }
+
+  if (isSuccessConfirmation) {
+    return (
+      <Card className="w-full max-w-md shadow-md text-center">
+        <CardHeader className="space-y-2">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-600">
+            <Mail className="h-6 w-6" />
+          </div>
+          <CardTitle className="text-2xl font-bold tracking-tight">Check your email</CardTitle>
+          <CardDescription>
+            We sent a verification link to{" "}
+            <strong className="text-foreground">{formData.email}</strong>.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Alert variant="success">
+            <CheckCircle2 className="h-4 w-4" />
+            <AlertTitle>Registration Successful</AlertTitle>
+            <AlertDescription>
+              Please verify your email address before logging in to access your workspace.
+            </AlertDescription>
+          </Alert>
+        </CardContent>
+        <CardFooter className="flex justify-center">
+          <Link href="/login">
+            <Button variant="outline">Return to Sign in</Button>
+          </Link>
+        </CardFooter>
+      </Card>
+    );
+  }
+
+  return (
+    <Card className="w-full max-w-md shadow-md">
+      <CardHeader className="space-y-1 text-center">
+        <CardTitle className="text-2xl font-bold tracking-tight">Create an account</CardTitle>
+        <CardDescription>
+          Get started with NEXORA to manage intelligence and project velocity
+        </CardDescription>
+      </CardHeader>
+
+      <form onSubmit={handleSubmit}>
+        <CardContent className="space-y-4">
+          {generalError && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Registration Failed</AlertTitle>
+              <AlertDescription>{generalError}</AlertDescription>
+            </Alert>
+          )}
+
+          <div className="space-y-2">
+            <Label htmlFor="signup-name">Full name</Label>
+            <Input
+              id="signup-name"
+              name="fullName"
+              type="text"
+              autoComplete="name"
+              placeholder="Alex Morgan"
+              value={formData.fullName}
+              onChange={handleChange}
+              disabled={isLoading}
+              variant={errors.fullName ? "error" : "default"}
+              aria-describedby={errors.fullName ? "signup-name-error" : undefined}
+            />
+            {errors.fullName && (
+              <p id="signup-name-error" className="text-xs text-destructive">
+                {errors.fullName}
+              </p>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="signup-email">Email address</Label>
+            <Input
+              id="signup-email"
+              name="email"
+              type="email"
+              autoComplete="email"
+              placeholder="name@company.com"
+              value={formData.email}
+              onChange={handleChange}
+              disabled={isLoading}
+              variant={errors.email ? "error" : "default"}
+              aria-describedby={errors.email ? "signup-email-error" : undefined}
+            />
+            {errors.email && (
+              <p id="signup-email-error" className="text-xs text-destructive">
+                {errors.email}
+              </p>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="signup-password">Password</Label>
+            <Input
+              id="signup-password"
+              name="password"
+              type="password"
+              autoComplete="new-password"
+              placeholder="••••••••"
+              value={formData.password}
+              onChange={handleChange}
+              disabled={isLoading}
+              variant={errors.password ? "error" : "default"}
+              aria-describedby={errors.password ? "signup-password-error" : undefined}
+            />
+            {errors.password && (
+              <p id="signup-password-error" className="text-xs text-destructive">
+                {errors.password}
+              </p>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="signup-confirm-password">Confirm password</Label>
+            <Input
+              id="signup-confirm-password"
+              name="confirmPassword"
+              type="password"
+              autoComplete="new-password"
+              placeholder="••••••••"
+              value={formData.confirmPassword}
+              onChange={handleChange}
+              disabled={isLoading}
+              variant={errors.confirmPassword ? "error" : "default"}
+              aria-describedby={
+                errors.confirmPassword ? "signup-confirm-password-error" : undefined
+              }
+            />
+            {errors.confirmPassword && (
+              <p id="signup-confirm-password-error" className="text-xs text-destructive">
+                {errors.confirmPassword}
+              </p>
+            )}
+          </div>
+        </CardContent>
+
+        <CardFooter className="flex flex-col space-y-4 pt-2">
+          <Button type="submit" className="w-full" loading={isLoading}>
+            Create account
+          </Button>
+
+          <p className="text-center text-xs text-muted-foreground">
+            Already have an account?{" "}
+            <Link
+              href="/login"
+              className="font-medium text-primary underline underline-offset-4 hover:text-primary/90"
+            >
+              Sign in
+            </Link>
+          </p>
+        </CardFooter>
+      </form>
+    </Card>
+  );
+}
