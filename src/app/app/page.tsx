@@ -1,13 +1,21 @@
-import type { Metadata } from "next";
+import { redirect } from "next/navigation";
+import { getCurrentUser } from "@/features/auth";
+import { getUserWorkspaces } from "@/features/workspaces";
 
-export const metadata: Metadata = {
-  title: "App",
-};
+export default async function AppIndexPage() {
+  const { isAuthenticated } = await getCurrentUser();
 
-export default function AppIndexPage() {
-  return (
-    <div className="p-6">
-      <h1 className="text-xl font-semibold">Workspace Overview</h1>
-    </div>
-  );
+  if (!isAuthenticated) {
+    redirect("/login");
+  }
+
+  const workspaces = await getUserWorkspaces();
+  const firstWorkspace = workspaces[0];
+
+  if (!firstWorkspace) {
+    redirect("/app/onboarding");
+  }
+
+  // Deterministically redirect to the user's primary/first accessible workspace
+  redirect(`/app/${firstWorkspace.slug}`);
 }
