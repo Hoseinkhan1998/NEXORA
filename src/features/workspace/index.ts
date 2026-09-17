@@ -1,2 +1,1 @@
-// Domain module: Workspace
-export {};
+export * from "../workspaces";
