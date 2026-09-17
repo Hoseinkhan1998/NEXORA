@@ -1,0 +1,308 @@
+"use client";
+
+import * as React from "react";
+import { useRouter } from "next/navigation";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { Plus, AlertCircle } from "lucide-react";
+import { createTaskAction } from "../actions/create-task";
+import { createTaskSchema } from "../schemas/task";
+import type { TaskStatus, TaskPriority, WorkspaceAssignee } from "../types";
+
+interface CreateTaskDialogProps {
+  workspaceId: string;
+  projectId: string;
+  workspaceSlug: string;
+  assignees: WorkspaceAssignee[];
+  trigger?: React.ReactNode;
+}
+
+export function CreateTaskDialog({
+  workspaceId,
+  projectId,
+  workspaceSlug,
+  assignees,
+  trigger,
+}: CreateTaskDialogProps) {
+  const router = useRouter();
+  const [open, setOpen] = React.useState(false);
+  const [title, setTitle] = React.useState("");
+  const [description, setDescription] = React.useState("");
+  const [status, setStatus] = React.useState<TaskStatus>("todo");
+  const [priority, setPriority] = React.useState<TaskPriority>("medium");
+  const [assigneeId, setAssigneeId] = React.useState<string>("unassigned");
+  const [dueDate, setDueDate] = React.useState<string>("");
+  const [errors, setErrors] = React.useState<Record<string, string>>({});
+  const [generalError, setGeneralError] = React.useState<string | null>(null);
+  const [isPending, setIsPending] = React.useState(false);
+
+  function resetForm() {
+    setTitle("");
+    setDescription("");
+    setStatus("todo");
+    setPriority("medium");
+    setAssigneeId("unassigned");
+    setDueDate("");
+    setErrors({});
+    setGeneralError(null);
+    setIsPending(false);
+  }
+
+  function handleOpenChange(newOpen: boolean) {
+    if (!newOpen) {
+      resetForm();
+    }
+    setOpen(newOpen);
+  }
+
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setGeneralError(null);
+    setErrors({});
+
+    const chosenAssigneeId = assigneeId === "unassigned" ? null : assigneeId;
+
+    const validation = createTaskSchema.safeParse({
+      title,
+      description: description || undefined,
+      status,
+      priority,
+      assigneeId: chosenAssigneeId || undefined,
+      dueDate: dueDate || undefined,
+    });
+
+    if (!validation.success) {
+      const fieldErrors: Record<string, string> = {};
+      const flattened = validation.error.flatten().fieldErrors;
+      for (const [key, msgs] of Object.entries(flattened)) {
+        if (msgs?.[0]) fieldErrors[key] = msgs[0];
+      }
+      setErrors(fieldErrors);
+      return;
+    }
+
+    setIsPending(true);
+
+    try {
+      const formData = new FormData();
+      formData.set("title", title);
+      if (description) formData.set("description", description);
+      formData.set("status", status);
+      formData.set("priority", priority);
+      if (chosenAssigneeId) formData.set("assigneeId", chosenAssigneeId);
+      if (dueDate) formData.set("dueDate", dueDate);
+
+      const result = await createTaskAction(workspaceId, projectId, workspaceSlug, null, formData);
+
+      if (!result.success) {
+        if (result.fieldErrors) {
+          const fieldErrors: Record<string, string> = {};
+          for (const [key, msgs] of Object.entries(result.fieldErrors)) {
+            if (msgs?.[0]) fieldErrors[key] = msgs[0];
+          }
+          setErrors(fieldErrors);
+        }
+        setGeneralError(result.error || "Unable to create task.");
+        setIsPending(false);
+        return;
+      }
+
+      setOpen(false);
+      resetForm();
+      router.refresh();
+    } catch {
+      setGeneralError("An unexpected connection error occurred. Please try again.");
+      setIsPending(false);
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogTrigger asChild>
+        {trigger || (
+          <Button size="sm" className="gap-1.5 shadow-xs">
+            <Plus className="h-4 w-4" />
+            <span>Add Task</span>
+          </Button>
+        )}
+      </DialogTrigger>
+
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle className="text-xl font-bold">New Task</DialogTitle>
+          <DialogDescription className="text-xs text-muted-foreground">
+            Create an action item for this project.
+          </DialogDescription>
+        </DialogHeader>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {generalError && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Creation Error</AlertTitle>
+              <AlertDescription>{generalError}</AlertDescription>
+            </Alert>
+          )}
+
+          {/* Title */}
+          <div className="space-y-1.5">
+            <Label htmlFor="task-title" className="text-xs font-semibold">
+              Title <span className="text-destructive">*</span>
+            </Label>
+            <Input
+              id="task-title"
+              placeholder="e.g. Implement authentication flow"
+              value={title}
+              onChange={(e) => {
+                setTitle(e.target.value);
+                if (errors.title) {
+                  setErrors((prev) => {
+                    const next = { ...prev };
+                    delete next.title;
+                    return next;
+                  });
+                }
+              }}
+              disabled={isPending}
+              variant={errors.title ? "error" : "default"}
+              autoFocus
+            />
+            {errors.title && <p className="text-xs text-destructive">{errors.title}</p>}
+          </div>
+
+          {/* Status & Priority Row */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="task-status" className="text-xs font-semibold">
+                Status
+              </Label>
+              <Select
+                value={status}
+                onValueChange={(val) => setStatus(val as TaskStatus)}
+                disabled={isPending}
+              >
+                <SelectTrigger id="task-status" className="w-full">
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todo">To Do</SelectItem>
+                  <SelectItem value="in_progress">In Progress</SelectItem>
+                  <SelectItem value="done">Done</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="task-priority" className="text-xs font-semibold">
+                Priority
+              </Label>
+              <Select
+                value={priority}
+                onValueChange={(val) => setPriority(val as TaskPriority)}
+                disabled={isPending}
+              >
+                <SelectTrigger id="task-priority" className="w-full">
+                  <SelectValue placeholder="Select priority" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="low">Low</SelectItem>
+                  <SelectItem value="medium">Medium</SelectItem>
+                  <SelectItem value="high">High</SelectItem>
+                  <SelectItem value="urgent">Urgent</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {/* Assignee & Due Date Row */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="task-assignee" className="text-xs font-semibold">
+                Assignee
+              </Label>
+              <Select value={assigneeId} onValueChange={setAssigneeId} disabled={isPending}>
+                <SelectTrigger id="task-assignee" className="w-full">
+                  <SelectValue placeholder="Unassigned" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="unassigned">Unassigned</SelectItem>
+                  {assignees.map((member) => (
+                    <SelectItem key={member.userId} value={member.userId}>
+                      <span className="truncate">
+                        {member.fullName || member.email.split("@")[0]}
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="task-due-date" className="text-xs font-semibold">
+                Due Date
+              </Label>
+              <Input
+                id="task-due-date"
+                type="date"
+                value={dueDate}
+                onChange={(e) => setDueDate(e.target.value)}
+                disabled={isPending}
+                className="h-9 text-xs"
+              />
+              {errors.dueDate && <p className="text-xs text-destructive">{errors.dueDate}</p>}
+            </div>
+          </div>
+
+          {/* Description */}
+          <div className="space-y-1.5">
+            <Label htmlFor="task-desc" className="text-xs font-semibold">
+              Description <span className="text-muted-foreground font-normal">(optional)</span>
+            </Label>
+            <Textarea
+              id="task-desc"
+              placeholder="Additional details or acceptance criteria..."
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              disabled={isPending}
+              className="resize-none min-h-[60px]"
+            />
+            {errors.description && <p className="text-xs text-destructive">{errors.description}</p>}
+          </div>
+
+          <DialogFooter className="pt-2 gap-2 sm:gap-0">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setOpen(false)}
+              disabled={isPending}
+            >
+              Cancel
+            </Button>
+            <Button type="submit" loading={isPending} disabled={!title.trim() || isPending}>
+              Create Task
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}

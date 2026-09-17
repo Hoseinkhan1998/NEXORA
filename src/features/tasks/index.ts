@@ -1,2 +1,13 @@
-// Domain module: Tasks
-export {};
+export * from "./types";
+export * from "./schemas/task";
+export * from "./queries/get-tasks";
+export * from "./actions/create-task";
+export * from "./actions/update-task";
+export * from "./actions/delete-task";
+export * from "./components/task-status-badge";
+export * from "./components/task-priority-badge";
+export * from "./components/task-item";
+export * from "./components/task-empty-state";
+export * from "./components/create-task-dialog";
+export * from "./components/edit-task-dialog";
+export * from "./components/task-list";
