@@ -11,3 +11,6 @@ export * from "./components/create-project-dialog";
 export * from "./components/edit-project-dialog";
 export * from "./components/archive-project-button";
 export * from "./components/project-list-view";
+export * from "./components/project-view-switcher";
+export * from "./components/project-view-placeholder";
+export * from "./components/project-view-content";

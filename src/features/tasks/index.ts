@@ -11,3 +11,5 @@ export * from "./components/task-empty-state";
 export * from "./components/create-task-dialog";
 export * from "./components/edit-task-dialog";
 export * from "./components/task-list";
+export * from "./components/kanban/kanban-card";
+export * from "./components/kanban/kanban-column";
