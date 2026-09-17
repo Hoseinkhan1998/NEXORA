@@ -31,6 +31,8 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 *.log
+supabase/.temp/
+.temp/
 
 # Operating System & Editor files
 .DS_Store
