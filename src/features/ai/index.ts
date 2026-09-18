@@ -1,2 +1,13 @@
-// Domain module: AI Features
-export {};
+export * from "./types";
+export * from "./schemas/copilot";
+export * from "./lib/copilot-context";
+export * from "./lib/copilot-prompt";
+export * from "./lib/provider";
+export * from "./actions/send-copilot-message";
+export * from "./components/copilot-trigger";
+export * from "./components/copilot-sheet";
+export * from "./components/copilot-chat";
+export * from "./components/copilot-empty-state";
+export * from "./components/copilot-message-list";
+export * from "./components/copilot-message-item";
+export * from "./components/copilot-input";
