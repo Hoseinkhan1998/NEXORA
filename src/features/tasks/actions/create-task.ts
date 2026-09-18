@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getWorkspaceMembership } from "@/features/workspaces";
 import { createTaskSchema } from "../schemas/task";
+import { logActivity } from "@/features/collaboration/lib/log-activity";
+import { createNotification } from "@/features/notifications";
 import type { Task } from "../types";
 
 export interface CreateTaskState {
@@ -141,6 +143,52 @@ export async function createTaskAction(
       success: false,
       error: "Failed to create task. Please try again.",
     };
+  }
+
+  // Record activity audit event
+  await logActivity({
+    workspaceId,
+    projectId,
+    actorId: user.id,
+    entityType: "task",
+    entityId: newTask.id,
+    action: "task_created",
+    metadata: {
+      task_title: newTask.title,
+      status: newTask.status,
+      priority: newTask.priority,
+      assignee_id: newTask.assignee_id,
+      due_date: newTask.due_date,
+    },
+  });
+
+  // Dispatch in-app notifications if assigned to someone else
+  if (newTask.assignee_id && newTask.assignee_id !== user.id) {
+    await createNotification({
+      workspaceId,
+      recipientId: newTask.assignee_id,
+      actorId: user.id,
+      type: "task_assigned",
+      title: "New task assigned",
+      message: `You were assigned to task "${newTask.title}".`,
+      entityType: "task",
+      entityId: newTask.id,
+      projectId,
+    });
+
+    if (newTask.priority === "urgent") {
+      await createNotification({
+        workspaceId,
+        recipientId: newTask.assignee_id,
+        actorId: user.id,
+        type: "task_priority_urgent",
+        title: "Urgent task assigned",
+        message: `Task "${newTask.title}" is marked as Urgent priority.`,
+        entityType: "task",
+        entityId: newTask.id,
+        projectId,
+      });
+    }
   }
 
   revalidatePath(`/app/${workspaceSlug}/projects/${projectId}`);

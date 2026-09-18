@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getWorkspaceMembership } from "@/features/workspaces";
+import { logActivity } from "@/features/collaboration/lib/log-activity";
 
 export interface DeleteTaskResult {
   success: boolean;
@@ -43,6 +44,15 @@ export async function deleteTaskAction(
     };
   }
 
+  // Query task title for activity audit narrative
+  const { data: existingTask } = await supabase
+    .from("tasks")
+    .select("title")
+    .eq("id", taskId)
+    .eq("project_id", projectId)
+    .eq("workspace_id", workspaceId)
+    .single();
+
   const { error } = await supabase
     .from("tasks")
     .delete()
@@ -57,6 +67,19 @@ export async function deleteTaskAction(
       error: "Failed to delete task.",
     };
   }
+
+  // Record task deletion in activity log
+  await logActivity({
+    workspaceId,
+    projectId,
+    actorId: user.id,
+    entityType: "task",
+    entityId: taskId,
+    action: "task_deleted",
+    metadata: {
+      task_title: existingTask?.title || "a task",
+    },
+  });
 
   revalidatePath(`/app/${workspaceSlug}/projects/${projectId}`);
 

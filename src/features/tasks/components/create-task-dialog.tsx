@@ -146,163 +146,167 @@ export function CreateTaskDialog({
         )}
       </DialogTrigger>
 
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle className="text-xl font-bold">New Task</DialogTitle>
-          <DialogDescription className="text-xs text-muted-foreground">
-            Create an action item for this project.
-          </DialogDescription>
-        </DialogHeader>
+      {open && (
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold">New Task</DialogTitle>
+            <DialogDescription className="text-xs text-muted-foreground">
+              Create an action item for this project.
+            </DialogDescription>
+          </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {generalError && (
-            <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
-              <AlertTitle>Creation Error</AlertTitle>
-              <AlertDescription>{generalError}</AlertDescription>
-            </Alert>
-          )}
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {generalError && (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Creation Error</AlertTitle>
+                <AlertDescription>{generalError}</AlertDescription>
+              </Alert>
+            )}
 
-          {/* Title */}
-          <div className="space-y-1.5">
-            <Label htmlFor="task-title" className="text-xs font-semibold">
-              Title <span className="text-destructive">*</span>
-            </Label>
-            <Input
-              id="task-title"
-              placeholder="e.g. Implement authentication flow"
-              value={title}
-              onChange={(e) => {
-                setTitle(e.target.value);
-                if (errors.title) {
-                  setErrors((prev) => {
-                    const next = { ...prev };
-                    delete next.title;
-                    return next;
-                  });
-                }
-              }}
-              disabled={isPending}
-              variant={errors.title ? "error" : "default"}
-              autoFocus
-            />
-            {errors.title && <p className="text-xs text-destructive">{errors.title}</p>}
-          </div>
-
-          {/* Status & Priority Row */}
-          <div className="grid grid-cols-2 gap-3">
+            {/* Title */}
             <div className="space-y-1.5">
-              <Label htmlFor="task-status" className="text-xs font-semibold">
-                Status
-              </Label>
-              <Select
-                value={status}
-                onValueChange={(val) => setStatus(val as TaskStatus)}
-                disabled={isPending}
-              >
-                <SelectTrigger id="task-status" className="w-full">
-                  <SelectValue placeholder="Select status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todo">To Do</SelectItem>
-                  <SelectItem value="in_progress">In Progress</SelectItem>
-                  <SelectItem value="done">Done</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="task-priority" className="text-xs font-semibold">
-                Priority
-              </Label>
-              <Select
-                value={priority}
-                onValueChange={(val) => setPriority(val as TaskPriority)}
-                disabled={isPending}
-              >
-                <SelectTrigger id="task-priority" className="w-full">
-                  <SelectValue placeholder="Select priority" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="low">Low</SelectItem>
-                  <SelectItem value="medium">Medium</SelectItem>
-                  <SelectItem value="high">High</SelectItem>
-                  <SelectItem value="urgent">Urgent</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          {/* Assignee & Due Date Row */}
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label htmlFor="task-assignee" className="text-xs font-semibold">
-                Assignee
-              </Label>
-              <Select value={assigneeId} onValueChange={setAssigneeId} disabled={isPending}>
-                <SelectTrigger id="task-assignee" className="w-full">
-                  <SelectValue placeholder="Unassigned" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="unassigned">Unassigned</SelectItem>
-                  {assignees.map((member) => (
-                    <SelectItem key={member.userId} value={member.userId}>
-                      <span className="truncate">
-                        {member.fullName || member.email.split("@")[0]}
-                      </span>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="task-due-date" className="text-xs font-semibold">
-                Due Date
+              <Label htmlFor="task-title" className="text-xs font-semibold">
+                Title <span className="text-destructive">*</span>
               </Label>
               <Input
-                id="task-due-date"
-                type="date"
-                value={dueDate}
-                onChange={(e) => setDueDate(e.target.value)}
+                id="task-title"
+                placeholder="e.g. Implement authentication flow"
+                value={title}
+                onChange={(e) => {
+                  setTitle(e.target.value);
+                  if (errors.title) {
+                    setErrors((prev) => {
+                      const next = { ...prev };
+                      delete next.title;
+                      return next;
+                    });
+                  }
+                }}
                 disabled={isPending}
-                className="h-9 text-xs"
+                variant={errors.title ? "error" : "default"}
+                autoFocus
               />
-              {errors.dueDate && <p className="text-xs text-destructive">{errors.dueDate}</p>}
+              {errors.title && <p className="text-xs text-destructive">{errors.title}</p>}
             </div>
-          </div>
 
-          {/* Description */}
-          <div className="space-y-1.5">
-            <Label htmlFor="task-desc" className="text-xs font-semibold">
-              Description <span className="text-muted-foreground font-normal">(optional)</span>
-            </Label>
-            <Textarea
-              id="task-desc"
-              placeholder="Additional details or acceptance criteria..."
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              disabled={isPending}
-              className="resize-none min-h-[60px]"
-            />
-            {errors.description && <p className="text-xs text-destructive">{errors.description}</p>}
-          </div>
+            {/* Status & Priority Row */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="task-status" className="text-xs font-semibold">
+                  Status
+                </Label>
+                <Select
+                  value={status}
+                  onValueChange={(val) => setStatus(val as TaskStatus)}
+                  disabled={isPending}
+                >
+                  <SelectTrigger id="task-status" className="w-full">
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todo">To Do</SelectItem>
+                    <SelectItem value="in_progress">In Progress</SelectItem>
+                    <SelectItem value="done">Done</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
 
-          <DialogFooter className="pt-2 gap-2 sm:gap-0">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setOpen(false)}
-              disabled={isPending}
-            >
-              Cancel
-            </Button>
-            <Button type="submit" loading={isPending} disabled={!title.trim() || isPending}>
-              Create Task
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
+              <div className="space-y-1.5">
+                <Label htmlFor="task-priority" className="text-xs font-semibold">
+                  Priority
+                </Label>
+                <Select
+                  value={priority}
+                  onValueChange={(val) => setPriority(val as TaskPriority)}
+                  disabled={isPending}
+                >
+                  <SelectTrigger id="task-priority" className="w-full">
+                    <SelectValue placeholder="Select priority" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="low">Low</SelectItem>
+                    <SelectItem value="medium">Medium</SelectItem>
+                    <SelectItem value="high">High</SelectItem>
+                    <SelectItem value="urgent">Urgent</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* Assignee & Due Date Row */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="task-assignee" className="text-xs font-semibold">
+                  Assignee
+                </Label>
+                <Select value={assigneeId} onValueChange={setAssigneeId} disabled={isPending}>
+                  <SelectTrigger id="task-assignee" className="w-full">
+                    <SelectValue placeholder="Unassigned" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="unassigned">Unassigned</SelectItem>
+                    {assignees.map((member) => (
+                      <SelectItem key={member.userId} value={member.userId}>
+                        <span className="truncate">
+                          {member.fullName || member.email.split("@")[0]}
+                        </span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="task-due-date" className="text-xs font-semibold">
+                  Due Date
+                </Label>
+                <Input
+                  id="task-due-date"
+                  type="date"
+                  value={dueDate}
+                  onChange={(e) => setDueDate(e.target.value)}
+                  disabled={isPending}
+                  className="h-9 text-xs"
+                />
+                {errors.dueDate && <p className="text-xs text-destructive">{errors.dueDate}</p>}
+              </div>
+            </div>
+
+            {/* Description */}
+            <div className="space-y-1.5">
+              <Label htmlFor="task-desc" className="text-xs font-semibold">
+                Description <span className="text-muted-foreground font-normal">(optional)</span>
+              </Label>
+              <Textarea
+                id="task-desc"
+                placeholder="Additional details or acceptance criteria..."
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                disabled={isPending}
+                className="resize-none min-h-[60px]"
+              />
+              {errors.description && (
+                <p className="text-xs text-destructive">{errors.description}</p>
+              )}
+            </div>
+
+            <DialogFooter className="pt-2 gap-2 sm:gap-0">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setOpen(false)}
+                disabled={isPending}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" loading={isPending} disabled={!title.trim() || isPending}>
+                Create Task
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      )}
     </Dialog>
   );
 }

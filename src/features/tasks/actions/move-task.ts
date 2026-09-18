@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getWorkspaceMembership } from "@/features/workspaces";
 import { moveTaskSchema, type MoveTaskSchemaInput } from "../schemas/task";
+import { logActivity } from "@/features/collaboration/lib/log-activity";
+import { createNotification } from "@/features/notifications";
 import type { Task } from "../types";
 
 export interface MoveTaskResult {
@@ -74,7 +76,7 @@ export async function moveTaskAction(
   // 5. Verify task exists, belongs to this project & workspace
   const { data: existingTask, error: taskCheckError } = await supabase
     .from("tasks")
-    .select("id, status, position")
+    .select("id, title, status, position, assignee_id")
     .eq("id", taskId)
     .eq("project_id", projectId)
     .eq("workspace_id", workspaceId)
@@ -106,6 +108,53 @@ export async function moveTaskAction(
       success: false,
       error: "Failed to persist task position. Please try again.",
     };
+  }
+
+  // Record activity audit event and notifications
+  if (existingTask.status !== status) {
+    await logActivity({
+      workspaceId,
+      projectId,
+      actorId: user.id,
+      entityType: "task",
+      entityId: taskId,
+      action: "task_status_changed",
+      metadata: {
+        task_title: existingTask.title,
+        old_status: existingTask.status,
+        new_status: status,
+        position,
+      },
+    });
+
+    // Notify assignee if status changed by another user
+    if (existingTask.assignee_id && existingTask.assignee_id !== user.id) {
+      await createNotification({
+        workspaceId,
+        recipientId: existingTask.assignee_id,
+        actorId: user.id,
+        type: "task_status_changed",
+        title: "Task status updated",
+        message: `Task "${existingTask.title}" was moved to ${status.replace("_", " ")}.`,
+        entityType: "task",
+        entityId: taskId,
+        projectId,
+      });
+    }
+  } else {
+    await logActivity({
+      workspaceId,
+      projectId,
+      actorId: user.id,
+      entityType: "task",
+      entityId: taskId,
+      action: "task_moved",
+      metadata: {
+        task_title: existingTask.title,
+        new_status: status,
+        position,
+      },
+    });
   }
 
   // 7. Revalidate cached views

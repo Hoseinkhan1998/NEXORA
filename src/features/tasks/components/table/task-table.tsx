@@ -71,7 +71,7 @@ export function TaskTable({
   const canCreate = userRole !== "viewer";
   const isFiltered = hasActiveFilters(filters);
 
-  const handleSort = (field: SortField) => {
+  const handleSort = React.useCallback((field: SortField) => {
     setSortConfig((prev) => {
       if (prev?.field === field) {
         if (prev.direction === "asc") {
@@ -82,11 +82,11 @@ export function TaskTable({
       }
       return { field, direction: "asc" };
     });
-  };
+  }, []);
 
-  const handleResetFilters = () => {
+  const handleResetFilters = React.useCallback(() => {
     setFilters(DEFAULT_TASK_FILTERS);
-  };
+  }, []);
 
   // 1. Filter tasks
   const filteredTasks = React.useMemo(() => {

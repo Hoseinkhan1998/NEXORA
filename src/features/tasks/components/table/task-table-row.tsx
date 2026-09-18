@@ -20,7 +20,7 @@ interface TaskTableRowProps {
   userRole: WorkspaceRole;
 }
 
-export function TaskTableRow({
+function TaskTableRowInternal({
   task,
   workspaceId,
   projectId,
@@ -167,3 +167,5 @@ export function TaskTableRow({
     </TableRow>
   );
 }
+
+export const TaskTableRow = React.memo(TaskTableRowInternal);

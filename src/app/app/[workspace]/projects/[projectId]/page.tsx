@@ -8,9 +8,12 @@ import { ArchiveProjectButton } from "@/features/projects/components/archive-pro
 import { getProjectTasks, getWorkspaceAssignees } from "@/features/tasks/queries/get-tasks";
 import { ProjectViewContent } from "@/features/projects/components/project-view-content";
 import { parseProjectView } from "@/features/projects/types/views";
+import { getCurrentUser } from "@/features/auth/utils/get-current-user";
+import { getProjectActivities } from "@/features/collaboration/queries/get-project-activity";
+import { ProjectPresence, ActivitySheet, ActivityFeed } from "@/features/collaboration";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Calendar, Clock, User, FolderKanban, ShieldCheck } from "lucide-react";
+import { ArrowLeft, Calendar, Clock, User, FolderKanban, ShieldCheck, History } from "lucide-react";
 
 interface ProjectDetailPageProps {
   params: Promise<{ workspace: string; projectId: string }>;
@@ -48,11 +51,23 @@ export default async function ProjectDetailPage({ params, searchParams }: Projec
     notFound();
   }
 
-  // 3. Fetch project tasks and eligible workspace assignees
-  const [tasks, assignees] = await Promise.all([
+  // 3. Fetch project tasks, workspace assignees, current user session, and initial activities in parallel
+  const [tasks, assignees, { user, profile }, initialActivities] = await Promise.all([
     getProjectTasks(project.id, workspace.id),
     getWorkspaceAssignees(workspace.id),
+    getCurrentUser(),
+    getProjectActivities(project.id, workspace.id, 50),
   ]);
+
+  const currentUserPresence = user
+    ? {
+        userId: user.id,
+        email: user.email || "",
+        fullName: profile?.fullName || null,
+        avatarUrl: profile?.avatarUrl || null,
+        onlineAt: new Date().toISOString(),
+      }
+    : null;
 
   const isArchived = project.status === "archived";
   const projectColor = project.color || "#3B82F6";
@@ -86,8 +101,8 @@ export default async function ProjectDetailPage({ params, searchParams }: Projec
         </Link>
       </div>
 
-      {/* Project Header Banner */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-2 border-b border-border/60">
+      {/* Project Header Banner with Presence & Live Controls */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pb-2 border-b border-border/60">
         <div className="space-y-1.5 min-w-0">
           <div className="flex items-center gap-3 flex-wrap">
             <span
@@ -117,18 +132,28 @@ export default async function ProjectDetailPage({ params, searchParams }: Projec
           </p>
         </div>
 
-        {/* Project Actions */}
-        {canModify && (
-          <div className="flex items-center gap-2 shrink-0">
-            <EditProjectDialog project={project} workspaceSlug={workspace.slug} />
-            <ArchiveProjectButton
-              projectId={project.id}
-              workspaceId={workspace.id}
-              workspaceSlug={workspace.slug}
-              currentStatus={project.status}
-            />
-          </div>
-        )}
+        {/* Real-time Collaboration Controls: Presence & Activity */}
+        <div className="flex items-center gap-2 shrink-0 flex-wrap">
+          <ProjectPresence projectId={project.id} currentUser={currentUserPresence} />
+
+          <ActivitySheet
+            projectId={project.id}
+            projectName={project.name}
+            initialActivities={initialActivities}
+          />
+
+          {canModify && (
+            <>
+              <EditProjectDialog project={project} workspaceSlug={workspace.slug} />
+              <ArchiveProjectButton
+                projectId={project.id}
+                workspaceId={workspace.id}
+                workspaceSlug={workspace.slug}
+                currentStatus={project.status}
+              />
+            </>
+          )}
+        </div>
       </div>
 
       {/* Project Metadata Grid */}
@@ -175,7 +200,7 @@ export default async function ProjectDetailPage({ params, searchParams }: Projec
           </Card>
         </div>
 
-        {/* Right Column (1 col): Creator & Audit Details */}
+        {/* Right Column (1 col): Metadata & Live Activity Feed */}
         <div className="space-y-6">
           <Card className="shadow-xs">
             <CardHeader className="pb-3">
@@ -217,6 +242,26 @@ export default async function ProjectDetailPage({ params, searchParams }: Projec
                   RLS Isolation
                 </span>
                 <span className="text-emerald-600 dark:text-emerald-400 font-medium">Enforced</span>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Embedded Project Activity Stream */}
+          <Card className="shadow-xs">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-xs font-semibold flex items-center justify-between">
+                <span className="flex items-center gap-1.5">
+                  <History className="h-3.5 w-3.5 text-muted-foreground" />
+                  Recent Activity
+                </span>
+                <span className="text-[10px] text-muted-foreground font-normal font-mono">
+                  Live Stream
+                </span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <div className="max-h-[300px] overflow-y-auto scrollbar-thin pr-1">
+                <ActivityFeed projectId={project.id} initialActivities={initialActivities} />
               </div>
             </CardContent>
           </Card>
