@@ -42,12 +42,20 @@ export async function updateProfileAction(input: UpdateProfileInput): Promise<Up
       };
     }
 
-    // 1. Sync Supabase auth user metadata first (always succeeds for authenticated user)
+    // 1. Sync Supabase auth user metadata
+    // CRITICAL: NEVER store base64 data URLs in auth user_metadata!
+    // Supabase serializes user_metadata directly into the JWT session cookie.
+    // Storing a base64 image in user_metadata causes the cookie to exceed 16KB-32KB,
+    // which causes the HTTP server to throw HTTP 431 (Request Header Fields Too Large).
+    // Base64 images are safely stored in public.profiles in PostgreSQL instead.
+    const isBase64 = typeof input.avatarUrl === "string" && input.avatarUrl.startsWith("data:");
+    const safeAuthAvatarUrl = isBase64 ? null : (input.avatarUrl ?? null);
+
     try {
       await supabase.auth.updateUser({
         data: {
           full_name: trimmedName,
-          avatar_url: input.avatarUrl !== undefined ? input.avatarUrl : null,
+          avatar_url: safeAuthAvatarUrl,
         },
       });
     } catch (authMetaErr) {

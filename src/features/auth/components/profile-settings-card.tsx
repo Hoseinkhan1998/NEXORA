@@ -87,9 +87,9 @@ export function ProfileSettingsCard({ initialProfile }: ProfileSettingsCardProps
     reader.onload = (event) => {
       const img = new Image();
       img.onload = () => {
-        // Optimize to square 256x256 image for fast load and optimal storage
+        // Optimize to square 160x160 avatar image for fast load and optimal storage
         const canvas = document.createElement("canvas");
-        const maxDim = 256;
+        const maxDim = 160;
         canvas.width = maxDim;
         canvas.height = maxDim;
         const ctx = canvas.getContext("2d");
@@ -101,7 +101,7 @@ export function ProfileSettingsCard({ initialProfile }: ProfileSettingsCardProps
 
           ctx.drawImage(img, startX, startY, minSide, minSide, 0, 0, maxDim, maxDim);
 
-          const optimizedDataUrl = canvas.toDataURL("image/webp", 0.85);
+          const optimizedDataUrl = canvas.toDataURL("image/webp", 0.8);
           setAvatarUrl(optimizedDataUrl);
           setIsUploading(false);
         } else {
