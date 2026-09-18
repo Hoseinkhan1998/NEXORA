@@ -38,8 +38,13 @@ export async function getCurrentUser(): Promise<CurrentUserSession> {
     profile = {
       id: profileData.id,
       email: profileData.email,
-      fullName: profileData.full_name,
-      avatarUrl: profileData.avatar_url,
+      fullName:
+        profileData.full_name ||
+        (user.user_metadata?.full_name as string | undefined) ||
+        (user.user_metadata?.name as string | undefined) ||
+        null,
+      avatarUrl:
+        profileData.avatar_url || (user.user_metadata?.avatar_url as string | undefined) || null,
       createdAt: profileData.created_at,
       updatedAt: profileData.updated_at,
     };
