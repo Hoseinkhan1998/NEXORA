@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   Card,
   CardHeader,
@@ -15,16 +15,20 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, Eye, EyeOff, Clock } from "lucide-react";
 import { loginAction } from "../actions/login";
 import { loginSchema, type LoginInput } from "../schemas/auth";
 
 export function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const reason = searchParams.get("reason");
+
   const [formData, setFormData] = React.useState<LoginInput>({
     email: "",
     password: "",
   });
+  const [showPassword, setShowPassword] = React.useState(false);
   const [errors, setErrors] = React.useState<Record<string, string>>({});
   const [generalError, setGeneralError] = React.useState<string | null>(null);
   const [isLoading, setIsLoading] = React.useState(false);
@@ -104,6 +108,30 @@ export function LoginForm() {
 
       <form onSubmit={handleSubmit}>
         <CardContent className="space-y-4">
+          {reason === "inactivity" && !generalError && (
+            <Alert
+              variant="default"
+              className="border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400"
+            >
+              <Clock className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+              <AlertTitle>Session Expired</AlertTitle>
+              <AlertDescription className="text-xs">
+                You have been logged out due to 2 hours of inactivity. Please sign in again.
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {reason === "deleted" && !generalError && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Profile Inactive</AlertTitle>
+              <AlertDescription className="text-xs">
+                Your profile was removed or is no longer valid. Please sign in or register a new
+                account.
+              </AlertDescription>
+            </Alert>
+          )}
+
           {generalError && (
             <Alert variant="destructive">
               <AlertCircle className="h-4 w-4" />
@@ -137,18 +165,30 @@ export function LoginForm() {
             <div className="flex items-center justify-between">
               <Label htmlFor="login-password">Password</Label>
             </div>
-            <Input
-              id="login-password"
-              name="password"
-              type="password"
-              autoComplete="current-password"
-              placeholder="••••••••"
-              value={formData.password}
-              onChange={handleChange}
-              disabled={isLoading}
-              variant={errors.password ? "error" : "default"}
-              aria-describedby={errors.password ? "login-password-error" : undefined}
-            />
+            <div className="relative">
+              <Input
+                id="login-password"
+                name="password"
+                type={showPassword ? "text" : "password"}
+                autoComplete="current-password"
+                placeholder="••••••••"
+                value={formData.password}
+                onChange={handleChange}
+                disabled={isLoading}
+                variant={errors.password ? "error" : "default"}
+                aria-describedby={errors.password ? "login-password-error" : undefined}
+                className="pr-10"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((prev) => !prev)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-ring rounded p-1"
+                aria-label={showPassword ? "Hide password" : "Show password"}
+                tabIndex={-1}
+              >
+                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
             {errors.password && (
               <p id="login-password-error" className="text-xs text-destructive">
                 {errors.password}

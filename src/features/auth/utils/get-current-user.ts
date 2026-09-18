@@ -26,37 +26,28 @@ export async function getCurrentUser(): Promise<CurrentUserSession> {
       .eq("id", user.id)
       .maybeSingle();
 
-    if (profileData) {
-      profile = {
-        id: profileData.id,
-        email: profileData.email,
-        fullName: profileData.full_name,
-        avatarUrl: profileData.avatar_url,
-        createdAt: profileData.created_at,
-        updatedAt: profileData.updated_at,
-      };
-    } else {
-      // Fallback profile representation from user metadata if row hasn't synced yet
-      profile = {
-        id: user.id,
-        email: user.email || "",
-        fullName:
-          (user.user_metadata?.full_name as string | undefined) ||
-          (user.user_metadata?.name as string | undefined) ||
-          null,
-        avatarUrl: (user.user_metadata?.avatar_url as string | undefined) || null,
-        createdAt: user.created_at,
-        updatedAt: user.updated_at || user.created_at,
+    if (!profileData) {
+      // Profile does not exist in public.profiles (e.g. deleted by admin)
+      return {
+        user: null,
+        profile: null,
+        isAuthenticated: false,
       };
     }
-  } catch {
+
     profile = {
-      id: user.id,
-      email: user.email || "",
-      fullName: (user.user_metadata?.full_name as string | undefined) || null,
-      avatarUrl: (user.user_metadata?.avatar_url as string | undefined) || null,
-      createdAt: user.created_at,
-      updatedAt: user.created_at,
+      id: profileData.id,
+      email: profileData.email,
+      fullName: profileData.full_name,
+      avatarUrl: profileData.avatar_url,
+      createdAt: profileData.created_at,
+      updatedAt: profileData.updated_at,
+    };
+  } catch {
+    return {
+      user: null,
+      profile: null,
+      isAuthenticated: false,
     };
   }
 

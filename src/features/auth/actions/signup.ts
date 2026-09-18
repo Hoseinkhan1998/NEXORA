@@ -44,6 +44,22 @@ export async function signupAction(values: SignupInput): Promise<AuthActionResul
       };
     }
 
+    if (data.session && data.user) {
+      try {
+        await supabase.from("profiles").upsert(
+          {
+            id: data.user.id,
+            email: data.user.email || "",
+            full_name: fullName || null,
+            avatar_url: null,
+          },
+          { onConflict: "id" }
+        );
+      } catch (err) {
+        console.warn("[signupAction] Profile init warning:", err);
+      }
+    }
+
     return {
       success: true,
       redirectTo: "/app",

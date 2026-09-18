@@ -18,6 +18,29 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(redirectUrl);
   }
 
+  // Enforce 2-hour inactivity timeout for authenticated requests
+  if (isProtectedRoute && user) {
+    const lastActivityCookie = request.cookies.get("nexora_last_activity")?.value;
+    if (lastActivityCookie) {
+      const lastActivityTime = parseInt(lastActivityCookie, 10);
+      const twoHoursMs = 2 * 60 * 60 * 1000;
+      if (!isNaN(lastActivityTime) && Date.now() - lastActivityTime > twoHoursMs) {
+        const redirectUrl = new URL("/login", request.url);
+        redirectUrl.searchParams.set("reason", "inactivity");
+        const res = NextResponse.redirect(redirectUrl);
+        res.cookies.delete("nexora_last_activity");
+        return res;
+      }
+    }
+
+    // Refresh last activity timestamp cookie (expires in 2 hours = 7200s)
+    supabaseResponse.cookies.set("nexora_last_activity", Date.now().toString(), {
+      path: "/",
+      maxAge: 7200,
+      sameSite: "lax",
+    });
+  }
+
   // Redirect already authenticated users away from login and signup to the application shell
   if (isAuthRoute && user) {
     return NextResponse.redirect(new URL("/app", request.url));

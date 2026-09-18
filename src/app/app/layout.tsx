@@ -1,17 +1,22 @@
 import type { ReactNode } from "react";
 import { redirect } from "next/navigation";
-import { getCurrentUser } from "@/features/auth";
+import { getCurrentUser, InactivityTracker } from "@/features/auth";
 
 interface AppRootLayoutProps {
   children: ReactNode;
 }
 
 export default async function AppRootLayout({ children }: AppRootLayoutProps) {
-  const { isAuthenticated } = await getCurrentUser();
+  const { isAuthenticated, profile } = await getCurrentUser();
 
-  if (!isAuthenticated) {
+  if (!isAuthenticated || !profile) {
     redirect("/login");
   }
 
-  return <>{children}</>;
+  return (
+    <>
+      <InactivityTracker />
+      {children}
+    </>
+  );
 }

@@ -53,25 +53,18 @@ export async function createWorkspaceAction(
     };
   }
 
-  // Ensure user profile exists in public.profiles before creating workspace
-  try {
-    const fullName =
-      (user.user_metadata?.full_name as string | undefined) ||
-      (user.user_metadata?.name as string | undefined) ||
-      user.email?.split("@")[0] ||
-      "User";
+  // Verify that the user profile actively exists in public.profiles
+  const { data: existingProfile } = await supabase
+    .from("profiles")
+    .select("id")
+    .eq("id", user.id)
+    .maybeSingle();
 
-    await supabase.from("profiles").upsert(
-      {
-        id: user.id,
-        email: user.email || "",
-        full_name: fullName,
-        avatar_url: (user.user_metadata?.avatar_url as string | undefined) || null,
-      },
-      { onConflict: "id" }
-    );
-  } catch (syncErr) {
-    console.warn("[createWorkspaceAction] Profile pre-sync warning:", syncErr);
+  if (!existingProfile) {
+    return {
+      success: false,
+      error: "User profile not found. Please log in again to refresh your session.",
+    };
   }
 
   const baseSlug = validated.data.slug || generateSlug(validated.data.name);
