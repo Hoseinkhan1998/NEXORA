@@ -5,6 +5,7 @@ import {
   LandingHero,
   LandingFeatures,
   LandingViewsShowcase,
+  LandingIntelligence,
   LandingTechStack,
   LandingCta,
   LandingFooter,
@@ -53,6 +54,7 @@ export default async function HomePage() {
         <LandingHero isAuthenticated={isAuthenticated} />
         <LandingFeatures />
         <LandingViewsShowcase />
+        <LandingIntelligence />
         <LandingTechStack />
         <LandingCta isAuthenticated={isAuthenticated} />
       </main>

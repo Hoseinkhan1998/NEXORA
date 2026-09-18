@@ -4,6 +4,7 @@ import { LandingNavbar } from "./landing-navbar";
 import { LandingHero } from "./landing-hero";
 import { LandingFeatures } from "./landing-features";
 import { LandingViewsShowcase } from "./landing-views-showcase";
+import { LandingIntelligence } from "./landing-intelligence";
 import { LandingTechStack } from "./landing-tech-stack";
 import { LandingCta } from "./landing-cta";
 import { LandingFooter } from "./landing-footer";
@@ -87,6 +88,31 @@ describe("LandingViewsShowcase Component", () => {
     const calendarButton = screen.getByRole("button", { name: /calendar/i });
     fireEvent.click(calendarButton);
     expect(screen.getByText(/Monthly and weekly deadline visibility/i)).toBeInTheDocument();
+  });
+});
+
+describe("LandingIntelligence Component", () => {
+  it("renders intelligence headline and capability tabs", () => {
+    render(<LandingIntelligence />);
+    expect(
+      screen.getByRole("heading", {
+        name: /understands your codebase & velocity/i,
+      })
+    ).toBeInTheDocument();
+
+    expect(screen.getByRole("button", { name: /sprint risk prediction/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /task decomposition/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /natural language triage/i })).toBeInTheDocument();
+  });
+
+  it("switches active intelligence preview on tab click", () => {
+    render(<LandingIntelligence />);
+    const taskBreakdownButton = screen.getByRole("button", { name: /task decomposition/i });
+    fireEvent.click(taskBreakdownButton);
+
+    expect(
+      screen.getByText(/Convert architectural specs into structured task graphs/i)
+    ).toBeInTheDocument();
   });
 });
 

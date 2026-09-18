@@ -53,6 +53,27 @@ export async function createWorkspaceAction(
     };
   }
 
+  // Ensure user profile exists in public.profiles before creating workspace
+  try {
+    const fullName =
+      (user.user_metadata?.full_name as string | undefined) ||
+      (user.user_metadata?.name as string | undefined) ||
+      user.email?.split("@")[0] ||
+      "User";
+
+    await supabase.from("profiles").upsert(
+      {
+        id: user.id,
+        email: user.email || "",
+        full_name: fullName,
+        avatar_url: (user.user_metadata?.avatar_url as string | undefined) || null,
+      },
+      { onConflict: "id" }
+    );
+  } catch (syncErr) {
+    console.warn("[createWorkspaceAction] Profile pre-sync warning:", syncErr);
+  }
+
   const baseSlug = validated.data.slug || generateSlug(validated.data.name);
   let targetSlug = baseSlug;
   let attempts = 0;
@@ -87,9 +108,17 @@ export async function createWorkspaceAction(
       }
 
       console.error("[createWorkspaceAction] Database error:", error);
+
+      const isProfileFk =
+        error.message?.includes("workspaces_owner_id_fkey") || error.details?.includes("profiles");
+
+      const errorMessage = isProfileFk
+        ? "User profile record missing in database. Please run the profile migration or contact support."
+        : error.message || "Unable to create workspace at this time. Please try again.";
+
       return {
         success: false,
-        error: "Unable to create workspace at this time. Please try again.",
+        error: errorMessage,
       };
     }
   }
