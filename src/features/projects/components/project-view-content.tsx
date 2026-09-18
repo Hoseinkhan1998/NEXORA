@@ -1,20 +1,57 @@
 "use client";
 
 import * as React from "react";
+import dynamic from "next/dynamic";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { ProjectViewSwitcher } from "./project-view-switcher";
 import { ProjectViewPlaceholder } from "./project-view-placeholder";
-import { TaskList } from "@/features/tasks/components/task-list";
-import { KanbanBoard } from "@/features/tasks/components/kanban/kanban-board";
-import { TaskTable } from "@/features/tasks/components/table/task-table";
-import { TaskCalendar } from "@/features/tasks/components/calendar/task-calendar";
-import { TaskTimeline } from "@/features/tasks/components/timeline/task-timeline";
 import { CreateTaskDialog } from "@/features/tasks/components/create-task-dialog";
+import { useProjectRealtime, RealtimeStatusBadge } from "@/features/collaboration";
 import { ShieldAlert } from "lucide-react";
 import type { ProjectView } from "../types/views";
 import { isProjectView, DEFAULT_PROJECT_VIEW } from "../types/views";
 import type { TaskWithDetails, WorkspaceAssignee } from "@/features/tasks/types";
 import type { WorkspaceRole } from "@/features/workspaces/types";
+
+function ViewSkeleton() {
+  return (
+    <div className="w-full space-y-4 animate-pulse pt-2">
+      <div className="h-10 bg-muted/40 rounded-lg w-full" />
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="h-64 bg-muted/30 rounded-lg" />
+        <div className="h-64 bg-muted/30 rounded-lg" />
+        <div className="h-64 bg-muted/30 rounded-lg" />
+      </div>
+    </div>
+  );
+}
+
+const TaskList = dynamic(
+  () => import("@/features/tasks/components/task-list").then((mod) => mod.TaskList),
+  { loading: () => <ViewSkeleton /> }
+);
+
+const KanbanBoard = dynamic(
+  () => import("@/features/tasks/components/kanban/kanban-board").then((mod) => mod.KanbanBoard),
+  { loading: () => <ViewSkeleton /> }
+);
+
+const TaskTable = dynamic(
+  () => import("@/features/tasks/components/table/task-table").then((mod) => mod.TaskTable),
+  { loading: () => <ViewSkeleton /> }
+);
+
+const TaskCalendar = dynamic(
+  () =>
+    import("@/features/tasks/components/calendar/task-calendar").then((mod) => mod.TaskCalendar),
+  { loading: () => <ViewSkeleton /> }
+);
+
+const TaskTimeline = dynamic(
+  () =>
+    import("@/features/tasks/components/timeline/task-timeline").then((mod) => mod.TaskTimeline),
+  { loading: () => <ViewSkeleton /> }
+);
 
 interface ProjectViewContentProps {
   initialView?: ProjectView;
@@ -28,7 +65,7 @@ interface ProjectViewContentProps {
 
 export function ProjectViewContent({
   initialView = DEFAULT_PROJECT_VIEW,
-  tasks,
+  tasks: initialTasks,
   workspaceId,
   projectId,
   workspaceSlug,
@@ -38,6 +75,13 @@ export function ProjectViewContent({
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+
+  // Project-scoped live real-time task synchronization
+  const { tasks, connectionStatus } = useProjectRealtime({
+    projectId,
+    initialTasks,
+    assignees,
+  });
 
   // URL query param ?view=... is the source of truth, falling back safely to initialView or "list"
   const rawView = searchParams.get("view");
@@ -66,6 +110,7 @@ export function ProjectViewContent({
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-2 border-b border-border/60">
         <div className="flex items-center gap-2 overflow-x-auto py-0.5">
           <ProjectViewSwitcher currentView={currentView} onViewChange={handleViewChange} />
+          <RealtimeStatusBadge status={connectionStatus} />
         </div>
 
         {/* In non-list views, provide the Task creation trigger in the toolbar */}
