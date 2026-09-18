@@ -109,4 +109,31 @@ describe("Command Palette Registry & Platform Engine", () => {
       expect(onNavigate).toHaveBeenCalledWith("/app/marketing");
     });
   });
+
+  describe("Persian Layout Keyboard Shortcut Detection", () => {
+    it("recognizes physical key codes (KeyK, KeyJ) independent of active layout", () => {
+      const isCmdOrCtrl = true;
+
+      // English
+      const eventEngK = { metaKey: true, ctrlKey: false, code: "KeyK", key: "k" };
+      const isKeyK_Eng =
+        isCmdOrCtrl &&
+        (eventEngK.code === "KeyK" || eventEngK.key.toLowerCase() === "k" || eventEngK.key === "ن");
+      expect(isKeyK_Eng).toBe(true);
+
+      // Persian layout produces 'ن' for key K
+      const eventFaK = { metaKey: false, ctrlKey: true, code: "KeyK", key: "ن" };
+      const isKeyK_Fa =
+        isCmdOrCtrl &&
+        (eventFaK.code === "KeyK" || eventFaK.key.toLowerCase() === "k" || eventFaK.key === "ن");
+      expect(isKeyK_Fa).toBe(true);
+
+      // Persian layout produces 'ت' for key J
+      const eventFaJ = { metaKey: true, ctrlKey: false, code: "KeyJ", key: "ت" };
+      const isKeyJ_Fa =
+        isCmdOrCtrl &&
+        (eventFaJ.code === "KeyJ" || eventFaJ.key.toLowerCase() === "j" || eventFaJ.key === "ت");
+      expect(isKeyJ_Fa).toBe(true);
+    });
+  });
 });

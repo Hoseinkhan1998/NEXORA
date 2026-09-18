@@ -42,17 +42,20 @@ export async function updateProfileAction(input: UpdateProfileInput): Promise<Up
       };
     }
 
-    // 1. Update database profile
-    const { data: updatedProfile, error: dbError } = await supabase
+    // 1. Update or create database profile record (upsert guarantees resilience)
+    const profilePayload = {
+      id: user.id,
+      email: user.email || "",
+      full_name: trimmedName,
+      avatar_url: input.avatarUrl !== undefined ? input.avatarUrl : null,
+      updated_at: new Date().toISOString(),
+    };
+
+    const { data: upsertedProfile, error: dbError } = await supabase
       .from("profiles")
-      .update({
-        full_name: trimmedName,
-        avatar_url: input.avatarUrl !== undefined ? input.avatarUrl : undefined,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", user.id)
+      .upsert(profilePayload, { onConflict: "id" })
       .select("id, email, full_name, avatar_url")
-      .single();
+      .maybeSingle();
 
     if (dbError) {
       console.error("[updateProfileAction] Database update error:", dbError);
@@ -61,6 +64,13 @@ export async function updateProfileAction(input: UpdateProfileInput): Promise<Up
         error: dbError.message || "Failed to update profile in database.",
       };
     }
+
+    const resolvedProfile = upsertedProfile || {
+      id: user.id,
+      email: user.email || "",
+      full_name: trimmedName,
+      avatar_url: input.avatarUrl !== undefined ? input.avatarUrl : null,
+    };
 
     // 2. Sync auth metadata
     await supabase.auth.updateUser({
@@ -76,10 +86,10 @@ export async function updateProfileAction(input: UpdateProfileInput): Promise<Up
     return {
       success: true,
       profile: {
-        id: updatedProfile.id,
-        email: updatedProfile.email,
-        fullName: updatedProfile.full_name,
-        avatarUrl: updatedProfile.avatar_url,
+        id: resolvedProfile.id,
+        email: resolvedProfile.email,
+        fullName: resolvedProfile.full_name,
+        avatarUrl: resolvedProfile.avatar_url,
       },
     };
   } catch (err) {

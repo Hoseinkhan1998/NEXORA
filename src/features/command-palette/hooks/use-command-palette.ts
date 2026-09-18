@@ -11,16 +11,27 @@ export function useCommandPalette() {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      const isModifierActive = e.metaKey || e.ctrlKey;
+      if (!isModifierActive) return;
+
       // Cmd+K or Ctrl+K -> Toggle Command Palette
-      if ((e.metaKey || e.ctrlKey) && (e.key === "k" || e.key === "K")) {
+      // Supports physical key (e.code === 'KeyK'), English ('k'), and Persian layout ('ن')
+      const isKeyK = e.code === "KeyK" || e.key.toLowerCase() === "k" || e.key === "ن";
+
+      if (isKeyK) {
         e.preventDefault();
         setOpen((prev) => !prev);
+        return;
       }
 
-      // Cmd+J -> Toggle AI Copilot
-      if ((e.metaKey || e.ctrlKey) && (e.key === "j" || e.key === "J")) {
+      // Cmd+J or Ctrl+J -> Toggle AI Copilot
+      // Supports physical key (e.code === 'KeyJ'), English ('j'), and Persian layout ('ت')
+      const isKeyJ = e.code === "KeyJ" || e.key.toLowerCase() === "j" || e.key === "ت";
+
+      if (isKeyJ) {
         e.preventDefault();
         window.dispatchEvent(new CustomEvent("nexora:open-copilot"));
+        return;
       }
     };
 
