@@ -10,7 +10,8 @@ export async function getAppOrigin(): Promise<string> {
   try {
     const headersList = await headers();
     const host = headersList.get("x-forwarded-host") || headersList.get("host");
-    const proto = headersList.get("x-forwarded-proto") || (host?.includes("localhost") ? "http" : "https");
+    const proto =
+      headersList.get("x-forwarded-proto") || (host?.includes("localhost") ? "http" : "https");
 
     if (host) {
       return `${proto}://${host}`;

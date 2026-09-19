@@ -14,6 +14,14 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Settings, LogOut } from "lucide-react";
@@ -25,6 +33,7 @@ interface UserMenuProps {
 
 export function UserMenu({ user, profile }: UserMenuProps) {
   const [isLoggingOut, startTransition] = React.useTransition();
+  const [showSignOutDialog, setShowSignOutDialog] = React.useState(false);
 
   const displayName = profile?.fullName || user?.user_metadata?.full_name || "User";
   const displayEmail = profile?.email || user?.email || "";
@@ -52,54 +61,89 @@ export function UserMenu({ user, profile }: UserMenuProps) {
   }
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="relative h-8 w-8 rounded-full ring-offset-background transition-opacity hover:opacity-80 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-          aria-label="User account menu"
-        >
-          <Avatar className="h-8 w-8">
-            <AvatarImage src={avatarUrl} alt={displayName} />
-            <AvatarFallback className="text-[11px] font-medium bg-primary/10 text-primary">
-              {initials}
-            </AvatarFallback>
-          </Avatar>
-        </Button>
-      </DropdownMenuTrigger>
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="relative h-8 w-8 rounded-full ring-offset-background transition-opacity hover:opacity-80 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            aria-label="User account menu"
+          >
+            <Avatar className="h-8 w-8">
+              <AvatarImage src={avatarUrl} alt={displayName} />
+              <AvatarFallback className="text-[11px] font-medium bg-primary/10 text-primary">
+                {initials}
+              </AvatarFallback>
+            </Avatar>
+          </Button>
+        </DropdownMenuTrigger>
 
-      <DropdownMenuContent className="w-56" align="end" forceMount>
-        <DropdownMenuLabel className="font-normal">
-          <div className="flex flex-col space-y-1">
-            <p className="text-sm font-medium leading-none text-foreground truncate">
-              {displayName}
-            </p>
-            <p className="text-xs leading-none text-muted-foreground truncate">{displayEmail}</p>
-          </div>
-        </DropdownMenuLabel>
-        <DropdownMenuSeparator />
+        <DropdownMenuContent className="w-56" align="end" forceMount>
+          <DropdownMenuLabel className="font-normal">
+            <div className="flex flex-col space-y-1">
+              <p className="text-sm font-medium leading-none text-foreground truncate">
+                {displayName}
+              </p>
+              <p className="text-xs leading-none text-muted-foreground truncate">{displayEmail}</p>
+            </div>
+          </DropdownMenuLabel>
+          <DropdownMenuSeparator />
 
-        <DropdownMenuGroup>
-          <DropdownMenuItem asChild className="cursor-pointer">
-            <Link href="/app/settings" className="flex items-center gap-2">
-              <Settings className="h-4 w-4 text-muted-foreground" />
-              <span>Settings</span>
-            </Link>
+          <DropdownMenuGroup>
+            <DropdownMenuItem asChild className="cursor-pointer">
+              <Link href="/app/settings" className="flex items-center gap-2">
+                <Settings className="h-4 w-4 text-muted-foreground" />
+                <span>Settings</span>
+              </Link>
+            </DropdownMenuItem>
+          </DropdownMenuGroup>
+
+          <DropdownMenuSeparator />
+
+          <DropdownMenuItem
+            className="cursor-pointer text-destructive focus:text-destructive flex items-center gap-2"
+            disabled={isLoggingOut}
+            onSelect={(e) => {
+              e.preventDefault();
+              setShowSignOutDialog(true);
+            }}
+          >
+            <LogOut className="h-4 w-4" />
+            <span>Sign out</span>
           </DropdownMenuItem>
-        </DropdownMenuGroup>
+        </DropdownMenuContent>
+      </DropdownMenu>
 
-        <DropdownMenuSeparator />
-
-        <DropdownMenuItem
-          className="cursor-pointer text-destructive focus:text-destructive flex items-center gap-2"
-          disabled={isLoggingOut}
-          onClick={handleLogout}
-        >
-          <LogOut className="h-4 w-4" />
-          <span>{isLoggingOut ? "Signing out..." : "Sign out"}</span>
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+      <Dialog open={showSignOutDialog} onOpenChange={setShowSignOutDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Sign out of NEXORA?</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to sign out? You will need to sign back in to access your
+              workspaces.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setShowSignOutDialog(false)}
+              disabled={isLoggingOut}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              loading={isLoggingOut}
+              onClick={handleLogout}
+            >
+              Sign out
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
