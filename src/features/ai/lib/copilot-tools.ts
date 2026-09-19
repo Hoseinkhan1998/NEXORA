@@ -403,7 +403,7 @@ export async function executeCopilotTool(
   if (mutationTools.includes(toolName) && role === "viewer") {
     return {
       success: false,
-      message: "شما دسترسی ویرایش در این فضای کاری را ندارید (Viewer هستید).",
+      message: "You do not have permission to modify workspace data (Viewer role).",
       isMutation: false,
     };
   }
@@ -454,7 +454,7 @@ export async function executeCopilotTool(
         if (error || !newProject) {
           return {
             success: false,
-            message: `خطا در ایجاد پروژه: ${error?.message || "Unknown error"}`,
+            message: `Failed to create project: ${error?.message || "Unknown error"}`,
             isMutation: false,
           };
         }
@@ -471,7 +471,7 @@ export async function executeCopilotTool(
 
         return {
           success: true,
-          message: `پروژه «${newProject.name}» با موفقیت ایجاد شد.`,
+          message: `Project "${newProject.name}" created successfully.`,
           data: newProject,
           isMutation: true,
         };
@@ -484,7 +484,7 @@ export async function executeCopilotTool(
         if (!project) {
           return {
             success: false,
-            message: `پروژه‌ای با مشخصات «${identifier}» پیدا نشد.`,
+            message: `Project with name or ID "${identifier}" not found.`,
             isMutation: false,
           };
         }
@@ -510,14 +510,14 @@ export async function executeCopilotTool(
         if (error || !updatedProject) {
           return {
             success: false,
-            message: `خطا در به‌روزرسانی پروژه: ${error?.message}`,
+            message: `Failed to update project: ${error?.message}`,
             isMutation: false,
           };
         }
 
         return {
           success: true,
-          message: `پروژه «${updatedProject.name}» با موفقیت به‌روزرسانی شد.`,
+          message: `Project "${updatedProject.name}" updated successfully.`,
           data: updatedProject,
           isMutation: true,
         };
@@ -530,7 +530,7 @@ export async function executeCopilotTool(
         if (!project) {
           return {
             success: false,
-            message: `پروژه‌ای با مشخصات «${identifier}» پیدا نشد.`,
+            message: `Project with name or ID "${identifier}" not found.`,
             isMutation: false,
           };
         }
@@ -544,14 +544,14 @@ export async function executeCopilotTool(
         if (error) {
           return {
             success: false,
-            message: `خطا در آرشیو پروژه: ${error.message}`,
+            message: `Failed to archive project: ${error.message}`,
             isMutation: false,
           };
         }
 
         return {
           success: true,
-          message: `پروژه «${project.name}» آرشیو شد.`,
+          message: `Project "${project.name}" has been archived.`,
           isMutation: true,
         };
       }
@@ -559,7 +559,7 @@ export async function executeCopilotTool(
       case "create_task": {
         const title = String(args.title || "").trim();
         if (!title) {
-          return { success: false, message: "عنوان تسک الزامی است.", isMutation: false };
+          return { success: false, message: "Task title is required.", isMutation: false };
         }
 
         let project = await resolveProject(
@@ -574,7 +574,7 @@ export async function executeCopilotTool(
             .from("projects")
             .insert({
               workspace_id: workspaceId,
-              name: "پروژه اصلی",
+              name: "Main Project",
               slug: "main-project",
               status: "active",
               created_by: userId,
@@ -588,7 +588,7 @@ export async function executeCopilotTool(
         if (!project) {
           return {
             success: false,
-            message: "برای ساخت تسک ابتدا باید یک پروژه در این فضای کاری ایجاد شود.",
+            message: "A project must exist in this workspace before creating a task.",
             isMutation: false,
           };
         }
@@ -624,7 +624,7 @@ export async function executeCopilotTool(
         if (error || !newTask) {
           return {
             success: false,
-            message: `خطا در ساخت تسک: ${error?.message || "Unknown error"}`,
+            message: `Failed to create task: ${error?.message || "Unknown error"}`,
             isMutation: false,
           };
         }
@@ -645,7 +645,7 @@ export async function executeCopilotTool(
 
         return {
           success: true,
-          message: `تسک «${newTask.title}» با موفقیت در وضعیت [${newTask.status}] در پروژه «${project.name}» ایجاد شد.`,
+          message: `Task "${newTask.title}" created successfully in status [${newTask.status}] under project "${project.name}".`,
           data: newTask,
           isMutation: true,
         };
@@ -658,7 +658,7 @@ export async function executeCopilotTool(
         if (!task) {
           return {
             success: false,
-            message: `تسکی با عنوان یا شناسه «${identifier}» پیدا نشد.`,
+            message: `Task with title or ID "${identifier}" not found.`,
             isMutation: false,
           };
         }
@@ -693,7 +693,7 @@ export async function executeCopilotTool(
         if (error || !updatedTask) {
           return {
             success: false,
-            message: `خطا در ویرایش تسک: ${error?.message}`,
+            message: `Failed to update task: ${error?.message}`,
             isMutation: false,
           };
         }
@@ -710,7 +710,7 @@ export async function executeCopilotTool(
 
         return {
           success: true,
-          message: `تسک «${updatedTask.title}» با موفقیت به‌روزرسانی شد.`,
+          message: `Task "${updatedTask.title}" updated successfully.`,
           data: updatedTask,
           isMutation: true,
         };
@@ -723,7 +723,7 @@ export async function executeCopilotTool(
         if (!["backlog", "todo", "in_progress", "in_review", "done"].includes(targetStatus)) {
           return {
             success: false,
-            message: `وضعیت نامعتبر است. گزینه‌های مجاز: backlog, todo, in_progress, in_review, done`,
+            message: `Invalid status. Allowed values: backlog, todo, in_progress, in_review, done`,
             isMutation: false,
           };
         }
@@ -732,7 +732,7 @@ export async function executeCopilotTool(
         if (!task) {
           return {
             success: false,
-            message: `تسکی با عنوان یا مشخصات «${identifier}» پیدا نشد.`,
+            message: `Task with title or ID "${identifier}" not found.`,
             isMutation: false,
           };
         }
@@ -748,7 +748,7 @@ export async function executeCopilotTool(
         if (error || !movedTask) {
           return {
             success: false,
-            message: `خطا در تغییر وضعیت تسک: ${error?.message}`,
+            message: `Failed to move task status: ${error?.message}`,
             isMutation: false,
           };
         }
@@ -770,7 +770,7 @@ export async function executeCopilotTool(
 
         return {
           success: true,
-          message: `تسک «${movedTask.title}» از وضعیت [${task.status}] به [${targetStatus}] منتقل شد.`,
+          message: `Task "${movedTask.title}" moved from [${task.status}] to [${targetStatus}].`,
           data: movedTask,
           isMutation: true,
         };
@@ -780,7 +780,7 @@ export async function executeCopilotTool(
         if (role !== "owner" && role !== "admin") {
           return {
             success: false,
-            message: "تنها مدیران یا سازنده فضای کاری می‌توانند تسک را حذف کنند.",
+            message: "Only workspace owners and administrators are permitted to delete tasks.",
             isMutation: false,
           };
         }
@@ -791,7 +791,7 @@ export async function executeCopilotTool(
         if (!task) {
           return {
             success: false,
-            message: `تسکی با عنوان یا مشخصات «${identifier}» پیدا نشد.`,
+            message: `Task with title or ID "${identifier}" not found.`,
             isMutation: false,
           };
         }
@@ -805,7 +805,7 @@ export async function executeCopilotTool(
         if (error) {
           return {
             success: false,
-            message: `خطا در حذف تسک: ${error.message}`,
+            message: `Failed to delete task: ${error.message}`,
             isMutation: false,
           };
         }
@@ -822,7 +822,7 @@ export async function executeCopilotTool(
 
         return {
           success: true,
-          message: `تسک «${task.title}» با موفقیت حذف شد.`,
+          message: `Task "${task.title}" deleted successfully.`,
           isMutation: true,
         };
       }
@@ -836,7 +836,7 @@ export async function executeCopilotTool(
 
         return {
           success: true,
-          message: `${projects?.length || 0} پروژه در این فضای کاری یافت شد.`,
+          message: `Found ${projects?.length || 0} projects in this workspace.`,
           data: projects || [],
           isMutation: false,
         };
@@ -865,7 +865,7 @@ export async function executeCopilotTool(
 
         return {
           success: true,
-          message: `${tasks?.length || 0} تسک یافت شد.`,
+          message: `Found ${tasks?.length || 0} tasks.`,
           data: tasks || [],
           isMutation: false,
         };
@@ -882,7 +882,7 @@ export async function executeCopilotTool(
     console.error(`[executeCopilotTool] Error executing ${toolName}:`, err);
     return {
       success: false,
-      message: `خطای سیستمی در اجرای دستور: ${err instanceof Error ? err.message : String(err)}`,
+      message: `System error executing command: ${err instanceof Error ? err.message : String(err)}`,
       isMutation: false,
     };
   }

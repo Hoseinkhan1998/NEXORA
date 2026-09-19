@@ -6,9 +6,9 @@ interface CopilotEmptyStateProps {
 
 export function CopilotEmptyState({ onSelectPrompt }: CopilotEmptyStateProps) {
   const suggestions = [
-    "خلاصه وضعیت پروژه‌ها و تسک‌ها رو بهم بگو",
-    "یک تسک جدید به اسم «بررسی نهایی» بساز",
-    "تسک‌های انجام نشده و دارای اولویت بالا را نشان بده",
+    "Summarize active projects and pending tasks",
+    "Create a new task named 'Review performance'",
+    "Which high-priority tasks are overdue or unassigned?",
     "What tasks are currently in progress?",
   ];
 

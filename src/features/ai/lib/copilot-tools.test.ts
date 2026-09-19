@@ -61,7 +61,7 @@ describe("NEXORA AI Copilot - Tools & Guardrails", () => {
       );
 
       expect(result.success).toBe(false);
-      expect(result.message).toContain("تنها مدیران یا سازنده فضای کاری");
+      expect(result.message).toContain("Only workspace owners and administrators");
     });
   });
 
@@ -167,7 +167,7 @@ describe("NEXORA AI Copilot - Tools & Guardrails", () => {
 
       expect(result.success).toBe(true);
       expect(result.isMutation).toBe(true);
-      expect(result.message).toContain("منتقل شد");
+      expect(result.message).toContain("moved from");
     });
   });
 });
@@ -194,7 +194,7 @@ describe("AI Provider Configuration Resolution", () => {
     expect(config).not.toBeNull();
     expect(config?.provider).toBe("groq");
     expect(config?.baseURL).toBe("https://api.groq.com/openai/v1");
-    expect(config?.model).toBe("llama-3.3-70b-versatile");
+    expect(config?.model).toBe("openai/gpt-oss-120b");
   });
 
   it("resolves Gemini when GEMINI_API_KEY is configured", () => {

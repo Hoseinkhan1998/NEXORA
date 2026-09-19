@@ -31,7 +31,7 @@ export interface AiProviderConfig {
 /**
  * Resolves active AI configuration checking supported free and commercial providers:
  * 1. AI_API_KEY (Custom generic override)
- * 2. GROQ_API_KEY (Free, fast Llama-3.3-70b)
+ * 2. GROQ_API_KEY (Free, fast inference on Groq)
  * 3. GEMINI_API_KEY (Google Gemini free tier)
  * 4. OPENROUTER_API_KEY (OpenRouter free/paid models)
  * 5. OPENAI_API_KEY (Standard OpenAI)
@@ -47,13 +47,13 @@ export function resolveAiConfiguration(): AiProviderConfig | null {
     };
   }
 
-  // 2. Groq (100% Free tier, super fast inference, full tool calling support)
+  // 2. Groq (Free tier, ultra-fast inference, supports function calling)
   if (process.env.GROQ_API_KEY?.trim()) {
     return {
       provider: "groq",
       apiKey: process.env.GROQ_API_KEY.trim(),
       baseURL: process.env.GROQ_BASE_URL?.trim() || "https://api.groq.com/openai/v1",
-      model: process.env.GROQ_MODEL?.trim() || "llama-3.3-70b-versatile",
+      model: process.env.GROQ_MODEL?.trim() || "openai/gpt-oss-120b",
     };
   }
 
@@ -95,6 +95,24 @@ export function resolveAiConfiguration(): AiProviderConfig | null {
 }
 
 /**
+ * Candidate models to try sequentially if the chosen model returns 404.
+ */
+function getFallbackModels(provider: string, primaryModel: string): string[] {
+  if (provider === "groq") {
+    const list = [
+      primaryModel,
+      "openai/gpt-oss-120b",
+      "openai/gpt-oss-20b",
+      "llama-3.3-70b-versatile",
+      "llama-3.1-8b-instant",
+    ];
+    // deduplicate while preserving order
+    return Array.from(new Set(list));
+  }
+  return [primaryModel];
+}
+
+/**
  * Server-side AI provider invocation with autonomous multi-step tool execution.
  */
 export async function generateCopilotResponse(
@@ -110,155 +128,176 @@ export async function generateCopilotResponse(
       success: false,
       code: "AI_NOT_CONFIGURED",
       message:
-        "هوش مصنوعی هنوز تنظیم نشده است. لطفاً کلید رایگان Groq یا Gemini یا OpenAI را در فایل .env.local قرار دهید (مانند GROQ_API_KEY=gsk_... یا OPENAI_API_KEY=sk_...).",
+        "AI Copilot is not configured. Please add GROQ_API_KEY, GEMINI_API_KEY, or OPENAI_API_KEY to your .env.local file.",
     };
   }
 
-  try {
-    const client = new OpenAI({
-      apiKey: config.apiKey,
-      baseURL: config.baseURL,
-    });
+  const client = new OpenAI({
+    apiKey: config.apiKey,
+    baseURL: config.baseURL,
+  });
 
-    // Format conversation history for OpenAI chat completions
-    const openaiMessages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
-      { role: "system", content: systemPrompt },
-      ...messages.map((m) => ({
-        role: m.role as "user" | "assistant",
-        content: m.content,
-      })),
-    ];
+  const candidateModels = getFallbackModels(config.provider, config.model);
+  let lastError: unknown = null;
 
-    let iterations = 0;
-    const maxIterations = 5;
-    let hasMutations = false;
-    const executedActions: string[] = [];
+  for (const modelToUse of candidateModels) {
+    try {
+      // Format conversation history for OpenAI chat completions
+      const openaiMessages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
+        { role: "system", content: systemPrompt },
+        ...messages.map((m) => ({
+          role: m.role as "user" | "assistant",
+          content: m.content,
+        })),
+      ];
 
-    while (iterations < maxIterations) {
-      iterations++;
+      let iterations = 0;
+      const maxIterations = 5;
+      let hasMutations = false;
+      const executedActions: string[] = [];
 
-      const response = await client.chat.completions.create({
-        model: config.model,
-        messages: openaiMessages,
-        tools: context ? COPILOT_TOOLS : undefined,
-        tool_choice: context ? "auto" : undefined,
-        temperature: 0.2,
-        max_tokens: 1200,
-      });
+      while (iterations < maxIterations) {
+        iterations++;
 
-      const choice = response.choices[0];
-      const message = choice?.message;
+        const response = await client.chat.completions.create({
+          model: modelToUse,
+          messages: openaiMessages,
+          tools: context ? COPILOT_TOOLS : undefined,
+          tool_choice: context ? "auto" : undefined,
+          temperature: 0.2,
+          max_tokens: 1200,
+        });
 
-      if (!message) {
-        return {
-          success: false,
-          code: "SERVER_ERROR",
-          message: "The AI provider returned an empty response. Please try again.",
-        };
-      }
+        const choice = response.choices[0];
+        const message = choice?.message;
 
-      // Check if tool calls were requested by the AI
-      if (message.tool_calls && message.tool_calls.length > 0 && context) {
-        openaiMessages.push(message);
-
-        for (const toolCall of message.tool_calls) {
-          if (toolCall.type === "function") {
-            let args: Record<string, unknown> = {};
-            try {
-              args = JSON.parse(toolCall.function.arguments || "{}");
-            } catch {
-              args = {};
-            }
-
-            const toolResult = await executeCopilotTool(
-              toolCall.function.name,
-              args,
-              context
-            );
-
-            if (toolResult.isMutation) {
-              hasMutations = true;
-              executedActions.push(toolResult.message);
-            }
-
-            openaiMessages.push({
-              role: "tool",
-              tool_call_id: toolCall.id,
-              content: JSON.stringify(toolResult),
-            });
-          }
+        if (!message) {
+          return {
+            success: false,
+            code: "SERVER_ERROR",
+            message: "The AI provider returned an empty response. Please try again.",
+          };
         }
 
-        // Loop to let the model generate conversational final response with tool results
-        continue;
-      }
+        // Check if tool calls were requested by the AI
+        if (message.tool_calls && message.tool_calls.length > 0 && context) {
+          openaiMessages.push(message);
 
-      // Final assistant response reached
-      const content = message.content?.trim();
+          for (const toolCall of message.tool_calls) {
+            if (toolCall.type === "function") {
+              let args: Record<string, unknown> = {};
+              try {
+                args = JSON.parse(toolCall.function.arguments || "{}");
+              } catch {
+                args = {};
+              }
 
-      if (!content) {
-        if (executedActions.length > 0) {
+              const toolResult = await executeCopilotTool(
+                toolCall.function.name,
+                args,
+                context
+              );
+
+              if (toolResult.isMutation) {
+                hasMutations = true;
+                executedActions.push(toolResult.message);
+              }
+
+              openaiMessages.push({
+                role: "tool",
+                tool_call_id: toolCall.id,
+                content: JSON.stringify(toolResult),
+              });
+            }
+          }
+
+          // Loop to let the model generate conversational final response with tool results
+          continue;
+        }
+
+        // Final assistant response reached
+        const content = message.content?.trim();
+
+        if (!content) {
+          if (executedActions.length > 0) {
+            return {
+              success: true,
+              content: executedActions.join("\n"),
+              hasMutations,
+              executedActions,
+            };
+          }
+
           return {
-            success: true,
-            content: executedActions.join("\n"),
-            hasMutations,
-            executedActions,
+            success: false,
+            code: "SERVER_ERROR",
+            message: "The AI provider returned an empty response. Please try again.",
           };
         }
 
         return {
-          success: false,
-          code: "SERVER_ERROR",
-          message: "The AI provider returned an empty response. Please try again.",
+          success: true,
+          content,
+          hasMutations,
+          executedActions,
         };
       }
 
+      // If loop reached max iterations
       return {
         success: true,
-        content,
+        content:
+          executedActions.length > 0
+            ? executedActions.join("\n")
+            : "Operations completed successfully.",
         hasMutations,
         executedActions,
       };
-    }
+    } catch (error: unknown) {
+      lastError = error;
 
-    // If loop reached max iterations
-    return {
-      success: true,
-      content:
-        executedActions.length > 0
-          ? executedActions.join("\n")
-          : "عملیات با موفقیت انجام شد.",
-      hasMutations,
-      executedActions,
-    };
-  } catch (error: unknown) {
-    console.error(`[copilot-provider] ${config.provider} API error:`, error);
-
-    // Normalize known error statuses
-    if (error && typeof error === "object" && "status" in error) {
-      const status = (error as { status?: number }).status;
-      if (status === 429) {
-        return {
-          success: false,
-          code: "RATE_LIMITED",
-          message: "سقف درخواست‌های هوش مصنوعی (Rate Limit) پر شده است. لطفاً چند لحظه صبر کنید.",
-        };
+      // Check for 404 (model not found / no access) to attempt next candidate model
+      if (
+        error &&
+        typeof error === "object" &&
+        "status" in error &&
+        (error as { status?: number }).status === 404
+      ) {
+        console.warn(
+          `[copilot-provider] Model "${modelToUse}" returned 404. Attempting next candidate...`
+        );
+        continue;
       }
-      if (status === 401) {
-        return {
-          success: false,
-          code: "AI_NOT_CONFIGURED",
-          message: "کلید API ارائه‌دهنده هوش مصنوعی نامعتبر یا منقضی شده است.",
-        };
-      }
+
+      // For non-404 errors, do not retry other models, handle immediately
+      break;
     }
-
-    const errorMsg = error instanceof Error ? error.message : "خطای ناشناخته";
-
-    return {
-      success: false,
-      code: "SERVER_ERROR",
-      message: `خطا در ارتباط با سرویس هوش مصنوعی: ${errorMsg}`,
-    };
   }
+
+  console.error(`[copilot-provider] ${config.provider} API error:`, lastError);
+
+  if (lastError && typeof lastError === "object" && "status" in lastError) {
+    const status = (lastError as { status?: number }).status;
+    if (status === 429) {
+      return {
+        success: false,
+        code: "RATE_LIMITED",
+        message: "AI request rate limit reached. Please wait a moment before trying again.",
+      };
+    }
+    if (status === 401) {
+      return {
+        success: false,
+        code: "AI_NOT_CONFIGURED",
+        message: "The configured AI API key is invalid or unauthorized.",
+      };
+    }
+  }
+
+  const errorMsg = lastError instanceof Error ? lastError.message : "Unknown error";
+  return {
+    success: false,
+    code: "SERVER_ERROR",
+    message: `Error communicating with AI service: ${errorMsg}`,
+  };
 }

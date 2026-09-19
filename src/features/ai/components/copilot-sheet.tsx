@@ -47,7 +47,7 @@ export function CopilotSheet({
         </SheetHeader>
 
         <div className="flex-1 min-h-0 overflow-hidden">
-          <CopilotChat workspaceSlug={workspaceSlug} workspaceName={workspaceName} />
+          <CopilotChat key={workspaceSlug} workspaceSlug={workspaceSlug} workspaceName={workspaceName} />
         </div>
       </SheetContent>
     </Sheet>
