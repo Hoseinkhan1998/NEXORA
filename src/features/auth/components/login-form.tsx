@@ -15,14 +15,18 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle, Eye, EyeOff, Clock } from "lucide-react";
+import { AlertCircle, Eye, EyeOff, Clock, Mail } from "lucide-react";
 import { loginAction } from "../actions/login";
+import { resendConfirmationAction } from "../actions/resend-confirmation";
 import { loginSchema, type LoginInput } from "../schemas/auth";
+import { GoogleSignInButton } from "./google-sign-in-button";
+import { toast } from "sonner";
 
 export function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const reason = searchParams.get("reason");
+  const urlError = searchParams.get("error");
 
   const [formData, setFormData] = React.useState<LoginInput>({
     email: "",
@@ -30,8 +34,35 @@ export function LoginForm() {
   });
   const [showPassword, setShowPassword] = React.useState(false);
   const [errors, setErrors] = React.useState<Record<string, string>>({});
-  const [generalError, setGeneralError] = React.useState<string | null>(null);
+  const [generalError, setGeneralError] = React.useState<string | null>(
+    urlError ? decodeURIComponent(urlError) : null
+  );
   const [isLoading, setIsLoading] = React.useState(false);
+  const [isResending, setIsResending] = React.useState(false);
+
+  async function handleResendConfirmation() {
+    if (!formData.email) {
+      toast.error("Please enter your email address first.");
+      return;
+    }
+    setIsResending(true);
+    try {
+      const res = await resendConfirmationAction(formData.email);
+      if (res.success) {
+        toast.success("Verification Email Sent", {
+          description: res.message || "Please check your inbox.",
+        });
+      } else {
+        toast.error("Could not resend email", {
+          description: res.error,
+        });
+      }
+    } catch {
+      toast.error("Failed to resend confirmation email.");
+    } finally {
+      setIsResending(false);
+    }
+  }
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
     const { name, value } = e.target;
@@ -108,6 +139,19 @@ export function LoginForm() {
 
       <form onSubmit={handleSubmit}>
         <CardContent className="space-y-4">
+          <GoogleSignInButton label="Continue with Google" disabled={isLoading} />
+
+          <div className="relative my-2">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t border-border/80" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-card px-2 text-muted-foreground tracking-wider">
+                Or continue with email
+              </span>
+            </div>
+          </div>
+
           {reason === "inactivity" && !generalError && (
             <Alert
               variant="default"
@@ -136,7 +180,23 @@ export function LoginForm() {
             <Alert variant="destructive">
               <AlertCircle className="h-4 w-4" />
               <AlertTitle>Authentication Failed</AlertTitle>
-              <AlertDescription>{generalError}</AlertDescription>
+              <AlertDescription className="space-y-2">
+                <p>{generalError}</p>
+                {(generalError.toLowerCase().includes("confirm") ||
+                  generalError.toLowerCase().includes("verif")) && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="mt-2 text-xs h-8 bg-background/80 border-destructive/40 hover:bg-destructive/10 text-destructive-foreground flex items-center gap-1.5"
+                    onClick={handleResendConfirmation}
+                    disabled={isResending}
+                  >
+                    <Mail className="h-3.5 w-3.5" />
+                    {isResending ? "Sending..." : "Resend Verification Email"}
+                  </Button>
+                )}
+              </AlertDescription>
             </Alert>
           )}
 

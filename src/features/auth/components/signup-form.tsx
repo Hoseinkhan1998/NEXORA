@@ -17,7 +17,10 @@ import { Button } from "@/components/ui/button";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle, CheckCircle2, Mail, Eye, EyeOff } from "lucide-react";
 import { signupAction } from "../actions/signup";
+import { resendConfirmationAction } from "../actions/resend-confirmation";
 import { signupSchema, type SignupInput } from "../schemas/auth";
+import { GoogleSignInButton } from "./google-sign-in-button";
+import { toast } from "sonner";
 
 export function SignupForm() {
   const router = useRouter();
@@ -33,6 +36,31 @@ export function SignupForm() {
   const [generalError, setGeneralError] = React.useState<string | null>(null);
   const [isSuccessConfirmation, setIsSuccessConfirmation] = React.useState(false);
   const [isLoading, setIsLoading] = React.useState(false);
+  const [isResending, setIsResending] = React.useState(false);
+
+  async function handleResendConfirmation() {
+    if (!formData.email) {
+      toast.error("Please provide an email address.");
+      return;
+    }
+    setIsResending(true);
+    try {
+      const res = await resendConfirmationAction(formData.email);
+      if (res.success) {
+        toast.success("Verification Email Sent", {
+          description: res.message || "Please check your inbox.",
+        });
+      } else {
+        toast.error("Could not resend email", {
+          description: res.error,
+        });
+      }
+    } catch {
+      toast.error("Failed to resend confirmation email.");
+    } finally {
+      setIsResending(false);
+    }
+  }
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
     const { name, value } = e.target;
@@ -116,16 +144,33 @@ export function SignupForm() {
             <strong className="text-foreground">{formData.email}</strong>.
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
           <Alert variant="success">
             <CheckCircle2 className="h-4 w-4" />
             <AlertTitle>Registration Successful</AlertTitle>
             <AlertDescription>
-              Please verify your email address before logging in to access your workspace.
+              Please verify your email address by clicking the link sent to your inbox before
+              logging in to access your workspace.
             </AlertDescription>
           </Alert>
+
+          <div className="pt-2 flex flex-col items-center gap-1.5 border-t border-border/60">
+            <p className="text-xs text-muted-foreground">
+              Didn&apos;t receive the email? Check your spam folder or
+            </p>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="text-xs h-8 text-primary hover:text-primary/90"
+              onClick={handleResendConfirmation}
+              disabled={isResending}
+            >
+              {isResending ? "Sending..." : "Resend Verification Email"}
+            </Button>
+          </div>
         </CardContent>
-        <CardFooter className="flex justify-center">
+        <CardFooter className="flex justify-center pt-2">
           <Link href="/login">
             <Button variant="outline">Return to Sign in</Button>
           </Link>
@@ -145,6 +190,19 @@ export function SignupForm() {
 
       <form onSubmit={handleSubmit}>
         <CardContent className="space-y-4">
+          <GoogleSignInButton label="Sign up with Google" disabled={isLoading} />
+
+          <div className="relative my-2">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t border-border/80" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-card px-2 text-muted-foreground tracking-wider">
+                Or continue with email
+              </span>
+            </div>
+          </div>
+
           {generalError && (
             <Alert variant="destructive">
               <AlertCircle className="h-4 w-4" />
