@@ -3,6 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { signupSchema, type SignupInput } from "../schemas/auth";
 import { mapAuthError } from "../utils/error-mapping";
+import { getAppOrigin } from "../utils/get-app-origin";
 import type { AuthActionResult } from "../types";
 
 export async function signupAction(values: SignupInput): Promise<AuthActionResult> {
@@ -18,12 +19,13 @@ export async function signupAction(values: SignupInput): Promise<AuthActionResul
   try {
     const supabase = await createClient();
     const { email, password, fullName } = parseResult.data;
+    const origin = await getAppOrigin();
 
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/auth/callback`,
+        emailRedirectTo: `${origin}/auth/callback`,
         data: {
           full_name: fullName || null,
         },

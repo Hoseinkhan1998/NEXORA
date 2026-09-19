@@ -4,6 +4,16 @@ import { updateSession } from "@/lib/supabase/middleware";
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  // Intercept any OAuth or email confirmation code that accidentally lands on root or other paths,
+  // and route it to /auth/callback for session exchange
+  if (request.nextUrl.searchParams.has("code") && !pathname.startsWith("/auth/callback")) {
+    const callbackUrl = new URL("/auth/callback", request.url);
+    request.nextUrl.searchParams.forEach((value, key) => {
+      callbackUrl.searchParams.set(key, value);
+    });
+    return NextResponse.redirect(callbackUrl);
+  }
+
   const { supabaseResponse, user } = await updateSession(request);
 
   const isAuthRoute = pathname.startsWith("/login") || pathname.startsWith("/signup");

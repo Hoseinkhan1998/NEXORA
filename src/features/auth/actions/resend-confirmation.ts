@@ -3,6 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { z } from "zod";
 import { mapAuthError } from "../utils/error-mapping";
+import { getAppOrigin } from "../utils/get-app-origin";
 
 const emailSchema = z.string().email("Invalid email address");
 
@@ -21,7 +22,7 @@ export async function resendConfirmationAction(email: string): Promise<{
 
   try {
     const supabase = await createClient();
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+    const appUrl = await getAppOrigin();
 
     const { error } = await supabase.auth.resend({
       type: "signup",
