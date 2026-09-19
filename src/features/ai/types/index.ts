@@ -54,6 +54,8 @@ export interface WorkspaceContextData {
 export interface CopilotResponseSuccess {
   success: true;
   message: CopilotMessage;
+  hasMutations?: boolean;
+  executedActions?: string[];
 }
 
 export interface CopilotResponseError {

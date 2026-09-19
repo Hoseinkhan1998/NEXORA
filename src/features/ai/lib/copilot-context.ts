@@ -155,7 +155,7 @@ export function formatWorkspaceContextString(data: WorkspaceContextData): string
       ? projects
           .map(
             (p) =>
-              `- [${p.status.toUpperCase()}] "${p.name}" (Tasks: ${p.completedTasks}/${p.totalTasks} done)${p.description ? `: ${p.description}` : ""}`
+              `- [id: ${p.id}] [${p.status.toUpperCase()}] "${p.name}" (Tasks: ${p.completedTasks}/${p.totalTasks} done)${p.description ? `: ${p.description}` : ""}`
           )
           .join("\n")
       : "No projects in this workspace.";
@@ -165,7 +165,7 @@ export function formatWorkspaceContextString(data: WorkspaceContextData): string
       ? tasks
           .map(
             (t) =>
-              `- [${t.status.toUpperCase()}] [${t.priority.toUpperCase()}] "${t.title}" (Project: ${t.projectName}${t.assigneeName ? `, Assignee: ${t.assigneeName}` : ", Unassigned"}${t.dueDate ? `, Due: ${t.dueDate}` : ", No due date"})${t.description ? ` — ${t.description}` : ""}`
+              `- [id: ${t.id}] [${t.status.toUpperCase()}] [${t.priority.toUpperCase()}] "${t.title}" (Project: ${t.projectName}${t.assigneeName ? `, Assignee: ${t.assigneeName}` : ", Unassigned"}${t.dueDate ? `, Due: ${t.dueDate}` : ", No due date"})${t.description ? ` — ${t.description}` : ""}`
           )
           .join("\n")
       : "No tasks in this workspace.";

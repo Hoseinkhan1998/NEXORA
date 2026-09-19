@@ -6,10 +6,10 @@ interface CopilotEmptyStateProps {
 
 export function CopilotEmptyState({ onSelectPrompt }: CopilotEmptyStateProps) {
   const suggestions = [
-    "Give me a summary of this workspace",
-    "What tasks need attention?",
-    "Which tasks are overdue?",
-    "What are the highest priority unfinished tasks?",
+    "خلاصه وضعیت پروژه‌ها و تسک‌ها رو بهم بگو",
+    "یک تسک جدید به اسم «بررسی نهایی» بساز",
+    "تسک‌های انجام نشده و دارای اولویت بالا را نشان بده",
+    "What tasks are currently in progress?",
   ];
 
   return (

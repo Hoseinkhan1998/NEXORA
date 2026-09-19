@@ -13,7 +13,7 @@ function FormattedContent({ text }: { text: string }) {
   const lines = text.split("\n");
 
   return (
-    <div className="space-y-1.5 text-xs leading-relaxed break-words">
+    <div className="space-y-1.5 text-xs leading-relaxed break-words" dir="auto">
       {lines.map((line, idx) => {
         const trimmed = line.trim();
 
@@ -165,7 +165,9 @@ export function CopilotMessageItem({ message }: CopilotMessageItemProps) {
           }`}
         >
           {isUser ? (
-            <p className="whitespace-pre-wrap leading-relaxed">{message.content}</p>
+            <p className="whitespace-pre-wrap leading-relaxed" dir="auto">
+              {message.content}
+            </p>
           ) : (
             <FormattedContent text={message.content} />
           )}

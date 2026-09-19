@@ -1,5 +1,6 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { copilotRequestSchema } from "../schemas/copilot";
 import { getWorkspaceCopilotContext } from "../lib/copilot-context";
@@ -98,8 +99,22 @@ export async function sendCopilotMessage(input: unknown): Promise<CopilotRespons
     // 5. Construct injection-resilient system prompt
     const systemPrompt = buildCopilotSystemPrompt(contextData);
 
-    // 6. Invoke AI provider
-    const result = await generateCopilotResponse(systemPrompt, messages);
+    // Extract user role in workspace
+    const memberRecord = Array.isArray(workspaceData.members)
+      ? workspaceData.members[0]
+      : workspaceData.members;
+    const userRole = memberRecord?.role || "member";
+
+    const executionContext = {
+      supabase,
+      workspaceId: workspaceData.id,
+      workspaceSlug: workspaceData.slug,
+      userId: user.id,
+      role: userRole,
+    };
+
+    // 6. Invoke AI provider with autonomous execution context
+    const result = await generateCopilotResponse(systemPrompt, messages, executionContext);
 
     if (!result.success) {
       return {
@@ -111,6 +126,12 @@ export async function sendCopilotMessage(input: unknown): Promise<CopilotRespons
       };
     }
 
+    // Revalidate app routes if mutations were performed
+    if (result.hasMutations) {
+      revalidatePath(`/app/${workspaceData.slug}`);
+      revalidatePath(`/app/${workspaceData.slug}/projects`);
+    }
+
     return {
       success: true,
       message: {
@@ -119,6 +140,8 @@ export async function sendCopilotMessage(input: unknown): Promise<CopilotRespons
         content: result.content,
         createdAt: new Date().toISOString(),
       },
+      hasMutations: result.hasMutations,
+      executedActions: result.executedActions,
     };
   } catch (error: unknown) {
     console.error("[sendCopilotMessage] Unexpected error:", error);

@@ -49,9 +49,16 @@ export function validateEnvironment(
   }
 
   // 3. Informative warnings for server-only optional keys
-  if (!env.OPENAI_API_KEY && env.NODE_ENV === "production") {
+  const hasAiKey = Boolean(
+    env.GROQ_API_KEY ||
+      env.GEMINI_API_KEY ||
+      env.OPENROUTER_API_KEY ||
+      env.OPENAI_API_KEY ||
+      env.AI_API_KEY
+  );
+  if (!hasAiKey && env.NODE_ENV === "production") {
     warnings.push(
-      "OPENAI_API_KEY is not set. In-app AI Copilot features will be unavailable in production."
+      "No AI provider key (GROQ_API_KEY, GEMINI_API_KEY, or OPENAI_API_KEY) is set. In-app AI Copilot features will be unavailable in production."
     );
   }
 

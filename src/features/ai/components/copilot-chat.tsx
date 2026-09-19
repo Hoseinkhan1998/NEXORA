@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { Trash2, AlertCircle } from "lucide-react";
@@ -14,6 +15,7 @@ interface CopilotChatProps {
 }
 
 export function CopilotChat({ workspaceSlug }: CopilotChatProps) {
+  const router = useRouter();
   const [messages, setMessages] = useState<CopilotMessage[]>([]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -48,6 +50,13 @@ export function CopilotChat({ workspaceSlug }: CopilotChatProps) {
         }
 
         setMessages((prev) => [...prev, res.message]);
+
+        // If the AI performed real mutations (created/updated tasks or projects),
+        // refresh server components so views (Kanban, Table, Projects list) update immediately
+        if (res.hasMutations) {
+          router.refresh();
+          window.dispatchEvent(new CustomEvent("nexora:workspace-mutated"));
+        }
       } catch (err) {
         console.error("[CopilotChat] Error communicating with copilot:", err);
         setErrorMessage("An unexpected network error occurred. Please try again.");
