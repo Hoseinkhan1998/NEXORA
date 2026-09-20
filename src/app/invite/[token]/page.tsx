@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/features/auth";
 import {
   getInvitationDetailsAction,
@@ -29,6 +30,18 @@ export default async function InvitePage({ params }: InvitePageProps) {
   const { token } = await params;
   const details = await getInvitationDetailsAction(token);
   const { user, isAuthenticated } = await getCurrentUser();
+
+  // If user is authenticated and already a member of this workspace, immediately navigate to the workspace
+  if (isAuthenticated && details.workspaceSlug) {
+    const ws = await getWorkspaceBySlug(details.workspaceSlug);
+    if (ws) {
+      redirect(`/app/${details.workspaceSlug}`);
+    }
+  }
+
+  if (isAuthenticated && details.alreadyMember && details.workspaceSlug) {
+    redirect(`/app/${details.workspaceSlug}`);
+  }
 
   if (!details.valid) {
     return (
@@ -73,13 +86,6 @@ export default async function InvitePage({ params }: InvitePageProps) {
     }
   }
 
-  let isAlreadyMember = false;
-  if (isAuthenticated && details.workspaceSlug) {
-    const ws = await getWorkspaceBySlug(details.workspaceSlug);
-    if (ws) {
-      isAlreadyMember = true;
-    }
-  }
 
 
   return (
@@ -88,7 +94,8 @@ export default async function InvitePage({ params }: InvitePageProps) {
       details={details}
       isAuthenticated={isAuthenticated}
       currentUserEmail={user?.email}
-      isAlreadyMember={isAlreadyMember}
+      isAlreadyMember={false}
     />
   );
 }
+

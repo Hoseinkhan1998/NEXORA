@@ -71,6 +71,42 @@ export async function sendInvitationEmail({
     }
   }
 
+  // 2. Try Supabase Auth Admin built-in email sender if SUPABASE_SERVICE_ROLE_KEY is configured
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY;
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+
+  if (serviceRoleKey && supabaseUrl) {
+    try {
+      const { createClient } = await import("@supabase/supabase-js");
+      const adminClient = createClient(supabaseUrl, serviceRoleKey, {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false,
+        },
+      });
+
+      const { error: inviteErr } = await adminClient.auth.admin.inviteUserByEmail(toEmail, {
+        redirectTo: inviteUrl,
+        data: {
+          workspace_name: workspaceName,
+          inviter_name: inviterName,
+          role: role,
+        },
+      });
+
+      if (!inviteErr) {
+        return { sent: true };
+      }
+
+      console.error("[sendInvitationEmail] Supabase admin invite error:", inviteErr);
+      return { sent: false, error: inviteErr.message };
+    } catch (err) {
+      console.error("[sendInvitationEmail] Supabase admin client error:", err);
+      return { sent: false, error: "Failed to connect to Supabase admin auth." };
+    }
+  }
+
   // No email service configured
   return { sent: false, error: "No email provider configured." };
 }
+

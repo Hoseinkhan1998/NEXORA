@@ -11,7 +11,9 @@ export interface InvitationDetailsResult {
   inviterName?: string;
   role?: string;
   email?: string | null;
+  alreadyMember?: boolean;
 }
+
 
 export interface AcceptInvitationResult {
   success: boolean;
@@ -50,10 +52,16 @@ export async function getInvitationDetailsAction(
         inviterName: String(res.inviter_name || "Workspace Admin"),
         role: String(res.role || "member"),
         email: res.email ? String(res.email) : null,
+        alreadyMember: Boolean(res.already_member),
       };
     }
-    return { valid: false, error: String(res.error || "Invalid invitation.") };
+    return {
+      valid: false,
+      error: String(res.error || "Invalid invitation."),
+      workspaceSlug: res.workspace_slug ? String(res.workspace_slug) : undefined,
+    };
   }
+
 
   // Fallback direct query
   const { data: invite, error: inviteError } = await supabase
@@ -84,8 +92,14 @@ export async function getInvitationDetailsAction(
   }
 
   if (invite.accepted_at && invite.email) {
-    return { valid: false, error: "This invitation has already been accepted." };
+    const ws = Array.isArray(invite.workspace) ? invite.workspace[0] : invite.workspace;
+    return {
+      valid: false,
+      error: "This invitation has already been accepted.",
+      workspaceSlug: ws?.slug,
+    };
   }
+
 
   if (new Date(invite.expires_at).getTime() < Date.now()) {
     return { valid: false, error: "This invitation link has expired." };

@@ -100,23 +100,43 @@ BEGIN
     RETURN jsonb_build_object('valid', false, 'error', 'Invitation not found');
   END IF;
 
+  -- Get workspace details
+  SELECT id, name, slug INTO v_workspace
+  FROM public.workspaces
+  WHERE id = v_invite.workspace_id;
+
+  -- If already accepted, check if current user is already a member of this workspace
   IF v_invite.accepted_at IS NOT NULL AND v_invite.email IS NOT NULL THEN
-    RETURN jsonb_build_object('valid', false, 'error', 'This invitation has already been accepted');
+    IF auth.uid() IS NOT NULL AND EXISTS (
+      SELECT 1 FROM public.workspace_members
+      WHERE workspace_id = v_invite.workspace_id AND user_id = auth.uid()
+    ) THEN
+      RETURN jsonb_build_object(
+        'valid', true,
+        'already_member', true,
+        'workspace_id', v_workspace.id,
+        'workspace_name', v_workspace.name,
+        'workspace_slug', v_workspace.slug,
+        'role', v_invite.role
+      );
+    END IF;
+
+    RETURN jsonb_build_object(
+      'valid', false,
+      'workspace_slug', v_workspace.slug,
+      'error', 'This invitation has already been accepted'
+    );
   END IF;
 
   IF v_invite.expires_at < now() THEN
     RETURN jsonb_build_object('valid', false, 'error', 'This invitation has expired');
   END IF;
 
-  -- Get workspace details
-  SELECT id, name, slug INTO v_workspace
-  FROM public.workspaces
-  WHERE id = v_invite.workspace_id;
-
   -- Get inviter details
   SELECT full_name, email INTO v_inviter
   FROM public.profiles
   WHERE id = v_invite.invited_by;
+
 
   RETURN jsonb_build_object(
     'valid', true,

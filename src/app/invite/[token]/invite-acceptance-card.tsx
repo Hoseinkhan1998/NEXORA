@@ -45,17 +45,16 @@ export function InviteAcceptanceCard({
       }
 
       setJoined(true);
+      const targetSlug = res.workspaceSlug || details.workspaceSlug;
       if (typeof document !== "undefined") {
         document.cookie = "nexora_pending_invite_token=; path=/; max-age=0";
-      }
-      toast.success("Welcome to the team! Redirecting to workspace...");
-      const targetSlug = res.workspaceSlug || details.workspaceSlug;
-      setTimeout(() => {
+        window.location.href = `/app/${targetSlug}`;
+      } else {
         router.push(`/app/${targetSlug}`);
-        router.refresh();
-      }, 1000);
+      }
     });
   };
+
 
 
   return (
