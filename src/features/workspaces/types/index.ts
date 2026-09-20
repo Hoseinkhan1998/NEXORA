@@ -18,6 +18,28 @@ export interface WorkspaceMember {
   updated_at: string;
 }
 
+export interface WorkspaceMemberWithProfile {
+  id: string;
+  userId: string;
+  workspaceId: string;
+  role: WorkspaceRole;
+  fullName: string | null;
+  email: string;
+  avatarUrl: string | null;
+  joinedAt: string;
+}
+
+export interface WorkspaceInvitation {
+  id: string;
+  workspaceId: string;
+  email: string | null;
+  role: "admin" | "member" | "viewer";
+  token: string;
+  invitedByName?: string;
+  expiresAt: string;
+  createdAt: string;
+}
+
 export interface WorkspaceWithRole extends Workspace {
   role: WorkspaceRole;
 }

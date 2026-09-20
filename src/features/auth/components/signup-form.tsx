@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   Card,
   CardHeader,
@@ -24,6 +24,7 @@ import { toast } from "sonner";
 
 export function SignupForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [formData, setFormData] = React.useState<SignupInput>({
     email: "",
     fullName: "",
@@ -123,7 +124,9 @@ export function SignupForm() {
         return;
       }
 
-      router.push(result.redirectTo || "/app");
+      const returnTo = searchParams.get("returnTo");
+      const safeRedirect = returnTo && returnTo.startsWith("/") && !returnTo.startsWith("//") ? returnTo : (result.redirectTo || "/app");
+      router.push(safeRedirect);
       router.refresh();
     } catch {
       setGeneralError("An unexpected connection error occurred. Please try again.");

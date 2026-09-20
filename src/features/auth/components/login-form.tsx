@@ -120,7 +120,9 @@ export function LoginForm() {
         return;
       }
 
-      router.push(result.redirectTo || "/app");
+      const returnTo = searchParams.get("returnTo");
+      const safeRedirect = returnTo && returnTo.startsWith("/") && !returnTo.startsWith("//") ? returnTo : (result.redirectTo || "/app");
+      router.push(safeRedirect);
       router.refresh();
     } catch {
       setGeneralError("An unexpected connection error occurred. Please try again.");
