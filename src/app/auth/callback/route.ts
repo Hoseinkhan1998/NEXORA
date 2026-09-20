@@ -39,12 +39,30 @@ export async function GET(request: Request) {
         console.warn("[auth/callback] Profile initialization error:", profileErr);
       }
 
-      return NextResponse.redirect(`${origin}${next}`);
+      // Check cookies for pending destinations
+      const { cookies } = await import("next/headers");
+      const cookieStore = await cookies();
+      const cookieNext = cookieStore.get("nexora_oauth_next")?.value;
+      const pendingInvite = cookieStore.get("nexora_pending_invite_token")?.value;
+
+      let destination = next;
+      if (destination === "/app" && cookieNext) {
+        destination = decodeURIComponent(cookieNext);
+      } else if (destination === "/app" && pendingInvite) {
+        destination = `/invite/${pendingInvite}`;
+      }
+
+      // Ensure destination is relative
+      const safeDestination = destination.startsWith("/") && !destination.startsWith("//") ? destination : "/app";
+      const response = NextResponse.redirect(`${origin}${safeDestination}`);
+      response.cookies.delete("nexora_oauth_next");
+      return response;
     } else if (error) {
       console.error("[auth/callback] exchangeCodeForSession error:", error.message);
       const message = encodeURIComponent(error.message || "Failed to exchange session");
       return NextResponse.redirect(`${origin}/login?error=${message}`);
     }
+
   }
 
   return NextResponse.redirect(`${origin}/login?error=auth_callback_failed`);

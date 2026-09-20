@@ -4,14 +4,17 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getWorkspaceMembership } from "../queries/get-workspaces";
 import { inviteMemberSchema, type InviteMemberInput } from "../schemas/invitation";
-import { logActivity } from "@/features/collaboration/lib/log-activity";
+import { sendInvitationEmail } from "../lib/send-invitation-email";
 
 export interface InviteMemberResult {
   success: boolean;
   error?: string;
   invitationToken?: string;
   alreadyMember?: boolean;
+  emailSent?: boolean;
+  inviteUrl?: string;
 }
+
 
 /**
  * Creates an email-specific invitation to a workspace with an assigned role.
@@ -105,19 +108,31 @@ export async function inviteMemberByEmailAction(
     };
   }
 
-  // Log activity
-  await logActivity({
-    workspaceId,
-    projectId: workspaceId,
-    actorId: user.id,
-    entityType: "project",
-    entityId: workspaceId,
-    action: "project_updated",
-    metadata: {
-      type: "member_invited",
-      invited_email: email,
-      role,
-    },
+  // 7. Resolve workspace and inviter details for email
+  const { data: wsData } = await supabase
+    .from("workspaces")
+    .select("name")
+    .eq("id", workspaceId)
+    .single();
+
+  const { data: callerProfile } = await supabase
+    .from("profiles")
+    .select("full_name, email")
+    .eq("id", user.id)
+    .single();
+
+  const workspaceName = wsData?.name || workspaceSlug;
+  const inviterName = callerProfile?.full_name || user.email?.split("@")[0] || "A team administrator";
+
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL || "http://localhost:3000";
+  const inviteUrl = `${baseUrl.replace(/\/$/, "")}/invite/${token}`;
+
+  const emailRes = await sendInvitationEmail({
+    toEmail: email,
+    workspaceName,
+    inviterName,
+    role,
+    inviteUrl,
   });
 
   revalidatePath(`/app/${workspaceSlug}/settings`);
@@ -125,8 +140,11 @@ export async function inviteMemberByEmailAction(
   return {
     success: true,
     invitationToken: token,
+    emailSent: emailRes.sent,
+    inviteUrl,
   };
 }
+
 
 /**
  * Retrieves an active shareable link invitation, or generates a new one.

@@ -127,6 +127,10 @@ export async function acceptInvitationAction(
     { p_token: cleanToken }
   );
 
+  if (rpcError) {
+    console.error("[acceptInvitationAction] RPC call error:", rpcError);
+  }
+
   if (!rpcError && rpcData && typeof rpcData === "object") {
     const res = rpcData as Record<string, unknown>;
     if (res.success) {
@@ -167,8 +171,13 @@ export async function acceptInvitationAction(
     .maybeSingle();
 
   if (inviteError || !invite) {
-    return { success: false, error: "Invalid invitation." };
+    if (inviteError) {
+      console.error("[acceptInvitationAction] Direct query error:", inviteError);
+    }
+    const fallbackMsg = rpcError ? rpcError.message : "Invalid invitation.";
+    return { success: false, error: fallbackMsg };
   }
+
 
   if (invite.accepted_at && invite.email) {
     return { success: false, error: "This invitation has already been used." };

@@ -59,6 +59,20 @@ export default async function InvitePage({ params }: InvitePageProps) {
     );
   }
 
+  if (details.valid) {
+    try {
+      const { cookies } = await import("next/headers");
+      const cookieStore = await cookies();
+      cookieStore.set("nexora_pending_invite_token", token, {
+        path: "/",
+        maxAge: 86400,
+        sameSite: "lax",
+      });
+    } catch (e) {
+      console.warn("[InvitePage] Could not set pending invite cookie:", e);
+    }
+  }
+
   let isAlreadyMember = false;
   if (isAuthenticated && details.workspaceSlug) {
     const ws = await getWorkspaceBySlug(details.workspaceSlug);
@@ -66,6 +80,7 @@ export default async function InvitePage({ params }: InvitePageProps) {
       isAlreadyMember = true;
     }
   }
+
 
   return (
     <InviteAcceptanceCard

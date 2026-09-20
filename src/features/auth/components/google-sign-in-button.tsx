@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
@@ -18,15 +19,26 @@ export function GoogleSignInButton({
   className,
 }: GoogleSignInButtonProps) {
   const [isLoading, setIsLoading] = React.useState(false);
+  const searchParams = useSearchParams();
 
   async function handleGoogleSignIn() {
     try {
       setIsLoading(true);
       const supabase = createClient();
       const origin = window.location.origin;
-      const redirectTo = `${origin}/auth/callback?next=/app`;
+
+      const rawNext = searchParams.get("returnTo") || searchParams.get("next") || "/app";
+      const safeNext = rawNext.startsWith("/") && !rawNext.startsWith("//") ? rawNext : "/app";
+
+      // Set backup cookie for redirect survival
+      if (typeof document !== "undefined") {
+        document.cookie = `nexora_oauth_next=${encodeURIComponent(safeNext)}; path=/; max-age=1800; SameSite=Lax`;
+      }
+
+      const redirectTo = `${origin}/auth/callback?next=${encodeURIComponent(safeNext)}`;
 
       const { error } = await supabase.auth.signInWithOAuth({
+
         provider: "google",
         options: {
           redirectTo,

@@ -45,6 +45,7 @@ export function InviteMemberDialog({
   const [email, setEmail] = useState("");
   const [emailRole, setEmailRole] = useState<"admin" | "member" | "viewer">("member");
   const [emailError, setEmailError] = useState<string | null>(null);
+  const [createdInvite, setCreatedInvite] = useState<{ email: string; inviteUrl: string; token: string } | null>(null);
   const [isPendingEmail, startEmailTransition] = useTransition();
 
   // Shareable link state
@@ -84,12 +85,25 @@ export function InviteMemberDialog({
         return;
       }
 
-      toast.success(`Invitation sent to ${email}`);
-      setEmail("");
-      setEmailRole("member");
-      setOpen(false);
+      if (res.emailSent) {
+        toast.success(`Invitation email sent to ${email}`);
+        setEmail("");
+        setEmailRole("member");
+        setCreatedInvite(null);
+        setOpen(false);
+      } else {
+        const origin = typeof window !== "undefined" ? window.location.origin : "";
+        const fallbackUrl = res.inviteUrl || `${origin}/invite/${res.invitationToken}`;
+        setCreatedInvite({
+          email: email.trim(),
+          inviteUrl: fallbackUrl,
+          token: res.invitationToken || "",
+        });
+        toast.success("Invitation created successfully!");
+      }
     });
   };
+
 
   const handleCopyLink = () => {
     if (!shareableToken) return;
@@ -140,82 +154,147 @@ export function InviteMemberDialog({
 
           {/* TAB 1: By Email */}
           <TabsContent value="email" className="space-y-4 pt-3">
-            <form onSubmit={handleSendEmail} className="space-y-4">
-              <div className="space-y-1.5">
-                <Label htmlFor="invite-email" className="text-xs font-medium">
-                  Email Address
-                </Label>
-                <Input
-                  id="invite-email"
-                  type="email"
-                  placeholder="colleague@company.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  disabled={isPendingEmail}
-                  className="h-9 text-xs"
-                  required
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <Label htmlFor="invite-role" className="text-xs font-medium">
-                  Workspace Role
-                </Label>
-                <Select
-                  value={emailRole}
-                  onValueChange={(val) => setEmailRole(val as "admin" | "member" | "viewer")}
-                  disabled={isPendingEmail}
-                >
-                  <SelectTrigger id="invite-role" className="h-9 text-xs">
-                    <SelectValue placeholder="Select a role" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="admin" className="text-xs">
-                      Admin
-                    </SelectItem>
-                    <SelectItem value="member" className="text-xs">
-                      Member
-                    </SelectItem>
-                    <SelectItem value="viewer" className="text-xs">
-                      Viewer
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-                <p className="text-[11px] text-muted-foreground">
-                  {roleDescriptions[emailRole]}
-                </p>
-              </div>
-
-              {emailError && (
-                <div className="p-2.5 rounded-md bg-destructive/10 border border-destructive/20 text-destructive text-xs flex items-center gap-2">
-                  <AlertCircle className="h-4 w-4 shrink-0" />
-                  <span>{emailError}</span>
+            {createdInvite ? (
+              <div className="space-y-4">
+                <div className="rounded-lg bg-emerald-500/10 border border-emerald-500/20 p-3.5 space-y-1.5">
+                  <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 font-semibold text-xs">
+                    <Check className="h-4 w-4 shrink-0" />
+                    <span>Invitation Ready for {createdInvite.email}</span>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground leading-relaxed">
+                    Automated email service is not configured in the environment. Send this direct invitation link to your teammate:
+                  </p>
                 </div>
-              )}
 
-              <div className="flex justify-end gap-2 pt-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setOpen(false)}
-                  className="text-xs cursor-pointer"
-                  disabled={isPendingEmail}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="submit"
-                  size="sm"
-                  disabled={isPendingEmail || !email.trim()}
-                  className="text-xs cursor-pointer gap-1.5"
-                >
-                  {isPendingEmail && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-                  <span>Send Invitation</span>
-                </Button>
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-medium">Direct Invitation Link</Label>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      readOnly
+                      value={createdInvite.inviteUrl}
+                      className="font-mono text-xs h-9 bg-muted/40 selection:bg-primary"
+                    />
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={() => {
+                        navigator.clipboard.writeText(createdInvite.inviteUrl);
+                        toast.success("Invitation link copied to clipboard!");
+                      }}
+                      className="h-9 px-3 gap-1.5 shrink-0 cursor-pointer"
+                    >
+                      <Copy className="h-3.5 w-3.5" />
+                      <span>Copy</span>
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="flex justify-end gap-2 pt-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setCreatedInvite(null);
+                      setEmail("");
+                    }}
+                    className="text-xs cursor-pointer"
+                  >
+                    Invite Another
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={() => {
+                      setCreatedInvite(null);
+                      setEmail("");
+                      setOpen(false);
+                    }}
+                    className="text-xs cursor-pointer"
+                  >
+                    Done
+                  </Button>
+                </div>
               </div>
-            </form>
+            ) : (
+              <form onSubmit={handleSendEmail} className="space-y-4">
+                <div className="space-y-1.5">
+                  <Label htmlFor="invite-email" className="text-xs font-medium">
+                    Email Address
+                  </Label>
+                  <Input
+                    id="invite-email"
+                    type="email"
+                    placeholder="colleague@company.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    disabled={isPendingEmail}
+                    className="h-9 text-xs"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="invite-role" className="text-xs font-medium">
+                    Workspace Role
+                  </Label>
+                  <Select
+                    value={emailRole}
+                    onValueChange={(val) => setEmailRole(val as "admin" | "member" | "viewer")}
+                    disabled={isPendingEmail}
+                  >
+                    <SelectTrigger id="invite-role" className="h-9 text-xs">
+                      <SelectValue placeholder="Select a role" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="admin" className="text-xs">
+                        Admin
+                      </SelectItem>
+                      <SelectItem value="member" className="text-xs">
+                        Member
+                      </SelectItem>
+                      <SelectItem value="viewer" className="text-xs">
+                        Viewer
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-[11px] text-muted-foreground">
+                    {roleDescriptions[emailRole]}
+                  </p>
+                </div>
+
+                {emailError && (
+                  <div className="p-2.5 rounded-md bg-destructive/10 border border-destructive/20 text-destructive text-xs flex items-center gap-2">
+                    <AlertCircle className="h-4 w-4 shrink-0" />
+                    <span>{emailError}</span>
+                  </div>
+                )}
+
+                <div className="flex justify-end gap-2 pt-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setOpen(false)}
+                    className="text-xs cursor-pointer"
+                    disabled={isPendingEmail}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    size="sm"
+                    disabled={isPendingEmail || !email.trim()}
+                    className="text-xs cursor-pointer gap-1.5"
+                  >
+                    {isPendingEmail && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                    <span>Send Invitation</span>
+                  </Button>
+                </div>
+              </form>
+            )}
           </TabsContent>
+
 
           {/* TAB 2: Shareable Link */}
           <TabsContent value="link" className="space-y-4 pt-3">

@@ -36,7 +36,18 @@ CREATE INDEX IF NOT EXISTS idx_workspace_invitations_email ON public.workspace_i
 ALTER TABLE public.workspace_invitations ENABLE ROW LEVEL SECURITY;
 
 -- 3. RLS Policies on workspace_invitations
--- Only workspace owners and admins can view invitations for their workspace
+-- Allow anyone (authenticated or anon) to read an invitation if they possess the unexpired token
+DROP POLICY IF EXISTS "Users can view active invitations by token" ON public.workspace_invitations;
+CREATE POLICY "Users can view active invitations by token"
+  ON public.workspace_invitations
+  FOR SELECT
+  TO authenticated, anon
+  USING (
+    token IS NOT NULL AND expires_at > now()
+  );
+
+-- Workspace owners and admins can view all invitations for their workspace
+DROP POLICY IF EXISTS "Workspace admins can view invitations" ON public.workspace_invitations;
 CREATE POLICY "Workspace admins can view invitations"
   ON public.workspace_invitations
   FOR SELECT
@@ -46,6 +57,7 @@ CREATE POLICY "Workspace admins can view invitations"
   );
 
 -- Only workspace owners and admins can create invitations
+DROP POLICY IF EXISTS "Workspace admins can create invitations" ON public.workspace_invitations;
 CREATE POLICY "Workspace admins can create invitations"
   ON public.workspace_invitations
   FOR INSERT
@@ -56,6 +68,7 @@ CREATE POLICY "Workspace admins can create invitations"
   );
 
 -- Only workspace owners and admins can delete/revoke invitations
+DROP POLICY IF EXISTS "Workspace admins can revoke invitations" ON public.workspace_invitations;
 CREATE POLICY "Workspace admins can revoke invitations"
   ON public.workspace_invitations
   FOR DELETE
@@ -63,6 +76,7 @@ CREATE POLICY "Workspace admins can revoke invitations"
   USING (
     public.is_workspace_owner_or_admin(workspace_id)
   );
+
 
 -- 4. Helper Function: Get Invitation Details by Token (Public / Semi-Public for Landing on /invite/[token])
 CREATE OR REPLACE FUNCTION public.get_invitation_details(p_token TEXT)
@@ -138,10 +152,16 @@ BEGIN
     RETURN jsonb_build_object('success', false, 'error', 'You must be signed in to accept an invitation');
   END IF;
 
-  -- Get caller profile
+  -- Get caller profile / auth email safely
   SELECT email INTO v_user_email
   FROM public.profiles
   WHERE id = v_user_id;
+
+  IF v_user_email IS NULL THEN
+    SELECT email INTO v_user_email
+    FROM auth.users
+    WHERE id = v_user_id;
+  END IF;
 
   -- Retrieve invitation
   SELECT * INTO v_invite
@@ -162,7 +182,7 @@ BEGIN
   END IF;
 
   -- If specific email was targeted, ensure caller email matches
-  IF v_invite.email IS NOT NULL AND lower(v_invite.email) <> lower(v_user_email) THEN
+  IF v_invite.email IS NOT NULL AND lower(v_invite.email) <> lower(COALESCE(v_user_email, '')) THEN
     RETURN jsonb_build_object('success', false, 'error', 'This invitation was sent to a different email address (' || v_invite.email || ')');
   END IF;
 
@@ -210,26 +230,6 @@ BEGIN
     WHERE id = v_invite.id;
   END IF;
 
-  -- Log member joined activity
-  INSERT INTO public.project_activity (
-    workspace_id,
-    actor_id,
-    entity_type,
-    entity_id,
-    action,
-    metadata
-  ) VALUES (
-    v_workspace.id,
-    v_user_id,
-    'workspace',
-    v_workspace.id,
-    'member_joined',
-    jsonb_build_object(
-      'role', v_invite.role,
-      'user_email', v_user_email
-    )
-  );
-
   RETURN jsonb_build_object(
     'success', true,
     'already_member', false,
@@ -237,8 +237,12 @@ BEGIN
     'workspace_name', v_workspace.name,
     'role', v_invite.role
   );
+EXCEPTION
+  WHEN OTHERS THEN
+    RETURN jsonb_build_object('success', false, 'error', SQLERRM);
 END;
 $$;
+
 
 GRANT EXECUTE ON FUNCTION public.accept_workspace_invitation(TEXT) TO authenticated;
 

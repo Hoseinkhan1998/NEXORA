@@ -45,6 +45,9 @@ export function InviteAcceptanceCard({
       }
 
       setJoined(true);
+      if (typeof document !== "undefined") {
+        document.cookie = "nexora_pending_invite_token=; path=/; max-age=0";
+      }
       toast.success("Welcome to the team! Redirecting to workspace...");
       const targetSlug = res.workspaceSlug || details.workspaceSlug;
       setTimeout(() => {
@@ -53,6 +56,7 @@ export function InviteAcceptanceCard({
       }, 1000);
     });
   };
+
 
   return (
     <Card className="w-full max-w-md shadow-lg border-border/60">

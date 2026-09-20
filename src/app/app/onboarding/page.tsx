@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
 import { getCurrentUser } from "@/features/auth";
 import { getUserWorkspaces, OnboardingForm } from "@/features/workspaces";
 import { ArrowLeft } from "lucide-react";
@@ -15,6 +17,15 @@ export default async function OnboardingPage() {
 
   const firstWorkspace = workspaces[0];
   const isFirstWorkspace = !firstWorkspace;
+
+  if (isFirstWorkspace) {
+    const cookieStore = await cookies();
+    const pendingInvite = cookieStore.get("nexora_pending_invite_token")?.value;
+    if (pendingInvite) {
+      redirect(`/invite/${pendingInvite}`);
+    }
+  }
+
 
   return (
     <div className="flex min-h-screen flex-col bg-background selection:bg-primary selection:text-primary-foreground">
