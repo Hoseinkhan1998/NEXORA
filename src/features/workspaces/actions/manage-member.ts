@@ -38,7 +38,10 @@ export async function updateMemberRoleAction(
 
   // 1. Authorize caller
   const callerMembership = await getWorkspaceMembership(workspaceId, user.id);
-  if (!callerMembership || (callerMembership.role !== "owner" && callerMembership.role !== "admin")) {
+  if (
+    !callerMembership ||
+    (callerMembership.role !== "owner" && callerMembership.role !== "admin")
+  ) {
     return {
       success: false,
       error: "Only owners and administrators are permitted to change member roles.",

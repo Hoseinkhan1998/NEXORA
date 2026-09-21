@@ -37,6 +37,10 @@ export function filterTasks(
       const matchesAssignee =
         task.assignee?.full_name?.toLowerCase().includes(query) ||
         task.assignee?.email?.toLowerCase().includes(query) ||
+        task.assignees?.some(
+          (a) =>
+            a.full_name?.toLowerCase().includes(query) || a.email?.toLowerCase().includes(query)
+        ) ||
         false;
 
       if (!matchesTitle && !matchesDescription && !matchesAssignee) {
@@ -57,11 +61,19 @@ export function filterTasks(
     // 4. Assignee Filter
     if (filters.assigneeId !== "all") {
       if (filters.assigneeId === "unassigned") {
-        if (task.assignee_id !== null && task.assignee !== null) {
+        const hasAssignees =
+          (task.assignees && task.assignees.length > 0) ||
+          Boolean(task.assignee_id || task.assignee);
+        if (hasAssignees) {
           return false;
         }
-      } else if (task.assignee_id !== filters.assigneeId) {
-        return false;
+      } else {
+        const isAssigned =
+          task.assignee_id === filters.assigneeId ||
+          task.assignees?.some((a) => a.id === filters.assigneeId);
+        if (!isAssigned) {
+          return false;
+        }
       }
     }
 

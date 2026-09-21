@@ -51,10 +51,10 @@ export function validateEnvironment(
   // 3. Informative warnings for server-only optional keys
   const hasAiKey = Boolean(
     env.GROQ_API_KEY ||
-      env.GEMINI_API_KEY ||
-      env.OPENROUTER_API_KEY ||
-      env.OPENAI_API_KEY ||
-      env.AI_API_KEY
+    env.GEMINI_API_KEY ||
+    env.OPENROUTER_API_KEY ||
+    env.OPENAI_API_KEY ||
+    env.AI_API_KEY
   );
   if (!hasAiKey && env.NODE_ENV === "production") {
     warnings.push(

@@ -38,7 +38,6 @@ export function GoogleSignInButton({
       const redirectTo = `${origin}/auth/callback?next=${encodeURIComponent(safeNext)}`;
 
       const { error } = await supabase.auth.signInWithOAuth({
-
         provider: "google",
         options: {
           redirectTo,

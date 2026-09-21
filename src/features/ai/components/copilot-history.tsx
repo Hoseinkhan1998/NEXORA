@@ -160,9 +160,7 @@ export function CopilotHistory({
             <Trash2 className="h-3 w-3 mr-1.5" />
             Clear All History
           </Button>
-          <span className="text-[10px] text-muted-foreground/70 font-mono">
-            Stored locally
-          </span>
+          <span className="text-[10px] text-muted-foreground/70 font-mono">Stored locally</span>
         </div>
       )}
     </div>

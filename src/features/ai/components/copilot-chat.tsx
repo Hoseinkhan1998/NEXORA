@@ -69,9 +69,7 @@ export function CopilotChat({ workspaceSlug }: CopilotChatProps) {
         const updatedSessions = prevSessions.map((session) => {
           if (session.id === targetId) {
             const isFirst = session.messages.length === 0 && userFirstPrompt;
-            const title = isFirst
-              ? deriveSessionTitle(userFirstPrompt)
-              : session.title;
+            const title = isFirst ? deriveSessionTitle(userFirstPrompt) : session.title;
 
             return {
               ...session,
@@ -256,11 +254,7 @@ export function CopilotChat({ workspaceSlug }: CopilotChatProps) {
       )}
 
       {/* Messages Scroll Area */}
-      <CopilotMessageList
-        messages={messages}
-        isLoading={isPending}
-        onSelectPrompt={handleSend}
-      />
+      <CopilotMessageList messages={messages} isLoading={isPending} onSelectPrompt={handleSend} />
 
       {/* Error Alert Banner */}
       {errorMessage && (

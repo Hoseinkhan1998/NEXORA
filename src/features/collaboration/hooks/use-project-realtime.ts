@@ -61,6 +61,14 @@ export function useProjectRealtime({
 
               const assigneeId = rawNew.assignee_id as string | null;
               const matchedAssignee = assigneeId ? assigneeMap.get(assigneeId) : null;
+              const assigneeObj = matchedAssignee
+                ? {
+                    id: matchedAssignee.userId,
+                    email: matchedAssignee.email,
+                    full_name: matchedAssignee.fullName,
+                    avatar_url: matchedAssignee.avatarUrl,
+                  }
+                : null;
 
               const newTask: TaskWithDetails = {
                 id: rawNew.id as string,
@@ -76,14 +84,8 @@ export function useProjectRealtime({
                 position: Number(rawNew.position) || 0,
                 created_at: rawNew.created_at as string,
                 updated_at: rawNew.updated_at as string,
-                assignee: matchedAssignee
-                  ? {
-                      id: matchedAssignee.userId,
-                      email: matchedAssignee.email,
-                      full_name: matchedAssignee.fullName,
-                      avatar_url: matchedAssignee.avatarUrl,
-                    }
-                  : null,
+                assignee: assigneeObj,
+                assignees: assigneeObj ? [assigneeObj] : [],
               };
 
               return [...prev, newTask];

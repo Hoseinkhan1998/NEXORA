@@ -69,10 +69,27 @@ export async function getWorkspaceMembers(
  * Retrieves active, unexpired pending invitations for a workspace.
  * Restricted by RLS to workspace owners and administrators.
  */
-export async function getWorkspaceInvitations(
-  workspaceId: string
-): Promise<WorkspaceInvitation[]> {
+export async function getWorkspaceInvitations(workspaceId: string): Promise<WorkspaceInvitation[]> {
   const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return [];
+  }
+
+  // Strictly verify the caller is owner or admin of this workspace
+  const { data: member } = await supabase
+    .from("workspace_members")
+    .select("role")
+    .eq("workspace_id", workspaceId)
+    .eq("user_id", user.id)
+    .single();
+
+  if (!member || (member.role !== "owner" && member.role !== "admin")) {
+    return [];
+  }
 
   const { data, error } = await supabase
     .from("workspace_invitations")
@@ -86,6 +103,7 @@ export async function getWorkspaceInvitations(
       expires_at,
       created_at,
       accepted_at,
+      is_single_use,
       inviter:profiles!invited_by (
         full_name,
         email
@@ -98,7 +116,7 @@ export async function getWorkspaceInvitations(
     .order("created_at", { ascending: false });
 
   if (error || !data) {
-    // If the table doesn't exist yet before migration, fail gracefully without breaking the page
+    // If table/columns don't exist yet before migration, fail gracefully
     return [];
   }
 
@@ -115,6 +133,7 @@ export async function getWorkspaceInvitations(
       invitedByName: inviterName,
       expiresAt: item.expires_at,
       createdAt: item.created_at,
+      isSingleUse: Boolean((item as Record<string, unknown>).is_single_use),
     };
   });
 }

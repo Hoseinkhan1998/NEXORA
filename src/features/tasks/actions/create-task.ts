@@ -33,7 +33,18 @@ export async function createTaskAction(
   const description = formData.get("description")?.toString() || undefined;
   const status = formData.get("status")?.toString() || "todo";
   const priority = formData.get("priority")?.toString() || "medium";
-  const assigneeId = formData.get("assigneeId")?.toString() || undefined;
+  const rawAssigneeIds = formData
+    .getAll("assigneeIds")
+    .map((v) => v.toString().trim())
+    .filter(Boolean);
+  const singleAssigneeId = formData.get("assigneeId")?.toString().trim();
+  if (
+    singleAssigneeId &&
+    singleAssigneeId !== "unassigned" &&
+    !rawAssigneeIds.includes(singleAssigneeId)
+  ) {
+    rawAssigneeIds.push(singleAssigneeId);
+  }
   const dueDate = formData.get("dueDate")?.toString() || undefined;
 
   const validated = createTaskSchema.safeParse({
@@ -41,7 +52,8 @@ export async function createTaskAction(
     description: description || undefined,
     status,
     priority,
-    assigneeId: assigneeId || undefined,
+    assigneeId: rawAssigneeIds[0] || undefined,
+    assigneeIds: rawAssigneeIds.length > 0 ? rawAssigneeIds : undefined,
     dueDate: dueDate || undefined,
   });
 
@@ -104,22 +116,29 @@ export async function createTaskAction(
     };
   }
 
-  // If assigneeId is provided, verify assignee belongs to this workspace
-  if (validated.data.assigneeId) {
-    const { data: assigneeMember } = await supabase
-      .from("workspace_members")
-      .select("id")
-      .eq("workspace_id", workspaceId)
-      .eq("user_id", validated.data.assigneeId)
-      .single();
+  // If assignees are provided, verify all assignees belong to this workspace
+  const targetAssigneeIds =
+    validated.data.assigneeIds || (validated.data.assigneeId ? [validated.data.assigneeId] : []);
 
-    if (!assigneeMember) {
+  if (targetAssigneeIds.length > 0) {
+    const { data: assigneeMembers } = await supabase
+      .from("workspace_members")
+      .select("user_id")
+      .eq("workspace_id", workspaceId)
+      .in("user_id", targetAssigneeIds);
+
+    const validMemberIds = new Set(assigneeMembers?.map((m) => m.user_id) || []);
+    const invalidIds = targetAssigneeIds.filter((id) => !validMemberIds.has(id));
+
+    if (invalidIds.length > 0) {
       return {
         success: false,
-        error: "Selected assignee is not a member of this workspace.",
+        error: "One or more selected assignees are not members of this workspace.",
       };
     }
   }
+
+  const primaryAssigneeId = targetAssigneeIds[0] || null;
 
   const { data: newTask, error: insertError } = await supabase
     .from("tasks")
@@ -130,7 +149,7 @@ export async function createTaskAction(
       description: validated.data.description?.trim() || null,
       status: validated.data.status,
       priority: validated.data.priority,
-      assignee_id: validated.data.assigneeId || null,
+      assignee_id: primaryAssigneeId,
       due_date: validated.data.dueDate || null,
       created_by: user.id,
     })
@@ -143,6 +162,15 @@ export async function createTaskAction(
       success: false,
       error: "Failed to create task. Please try again.",
     };
+  }
+
+  // Insert into task_assignees junction table
+  if (targetAssigneeIds.length > 0) {
+    const assigneeRows = targetAssigneeIds.map((uid) => ({
+      task_id: newTask.id,
+      user_id: uid,
+    }));
+    await supabase.from("task_assignees").insert(assigneeRows);
   }
 
   // Record activity audit event
@@ -158,36 +186,39 @@ export async function createTaskAction(
       status: newTask.status,
       priority: newTask.priority,
       assignee_id: newTask.assignee_id,
+      assignee_ids: targetAssigneeIds,
       due_date: newTask.due_date,
     },
   });
 
-  // Dispatch in-app notifications if assigned to someone else
-  if (newTask.assignee_id && newTask.assignee_id !== user.id) {
-    await createNotification({
-      workspaceId,
-      recipientId: newTask.assignee_id,
-      actorId: user.id,
-      type: "task_assigned",
-      title: "New task assigned",
-      message: `You were assigned to task "${newTask.title}".`,
-      entityType: "task",
-      entityId: newTask.id,
-      projectId,
-    });
-
-    if (newTask.priority === "urgent") {
+  // Dispatch in-app notifications if assigned to other members
+  for (const recipientId of targetAssigneeIds) {
+    if (recipientId !== user.id) {
       await createNotification({
         workspaceId,
-        recipientId: newTask.assignee_id,
+        recipientId,
         actorId: user.id,
-        type: "task_priority_urgent",
-        title: "Urgent task assigned",
-        message: `Task "${newTask.title}" is marked as Urgent priority.`,
+        type: "task_assigned",
+        title: "New task assigned",
+        message: `You were assigned to task "${newTask.title}".`,
         entityType: "task",
         entityId: newTask.id,
         projectId,
       });
+
+      if (newTask.priority === "urgent") {
+        await createNotification({
+          workspaceId,
+          recipientId,
+          actorId: user.id,
+          type: "task_priority_urgent",
+          title: "Urgent task assigned",
+          message: `Task "${newTask.title}" is marked as Urgent priority.`,
+          entityType: "task",
+          entityId: newTask.id,
+          projectId,
+        });
+      }
     }
   }
 

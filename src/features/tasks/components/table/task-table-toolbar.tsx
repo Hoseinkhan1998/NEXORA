@@ -10,6 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Search, X, RotateCcw } from "lucide-react";
 import { hasActiveFilters, type TaskTableFilters } from "../../lib/table-filter";
 import type { WorkspaceAssignee, TaskStatus, TaskPriority } from "../../types";
@@ -137,9 +138,25 @@ export function TaskTableToolbar({
                 <SelectItem value="unassigned">Unassigned</SelectItem>
                 {assignees.map((assignee) => {
                   const name = assignee.fullName || assignee.email.split("@")[0] || assignee.userId;
+                  const initials = name
+                    .split(" ")
+                    .map((n) => n[0])
+                    .join("")
+                    .slice(0, 2)
+                    .toUpperCase();
                   return (
                     <SelectItem key={assignee.userId} value={assignee.userId}>
-                      {name}
+                      <div className="flex items-center gap-2">
+                        <Avatar className="h-4 w-4 text-[9px]">
+                          {assignee.avatarUrl && (
+                            <AvatarImage src={assignee.avatarUrl} alt={name} />
+                          )}
+                          <AvatarFallback className="bg-primary/10 text-primary font-bold">
+                            {initials}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span className="truncate">{name}</span>
+                      </div>
                     </SelectItem>
                   );
                 })}

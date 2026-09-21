@@ -74,19 +74,33 @@ export async function updateTaskAction(
     };
   }
 
-  // If assigneeId is being updated, verify assignee belongs to this workspace
-  if (validated.data.assigneeId) {
-    const { data: assigneeMember } = await supabase
-      .from("workspace_members")
-      .select("id")
-      .eq("workspace_id", workspaceId)
-      .eq("user_id", validated.data.assigneeId)
-      .single();
+  // If assignees are being updated, verify assignees belong to this workspace
+  const isAssigneeUpdating =
+    validated.data.assigneeIds !== undefined || validated.data.assigneeId !== undefined;
 
-    if (!assigneeMember) {
+  const targetAssigneeIds =
+    validated.data.assigneeIds !== undefined
+      ? validated.data.assigneeIds
+      : validated.data.assigneeId
+        ? [validated.data.assigneeId]
+        : validated.data.assigneeId === null
+          ? []
+          : undefined;
+
+  if (targetAssigneeIds && targetAssigneeIds.length > 0) {
+    const { data: assigneeMembers } = await supabase
+      .from("workspace_members")
+      .select("user_id")
+      .eq("workspace_id", workspaceId)
+      .in("user_id", targetAssigneeIds);
+
+    const validMemberIds = new Set(assigneeMembers?.map((m) => m.user_id) || []);
+    const invalidIds = targetAssigneeIds.filter((id) => !validMemberIds.has(id));
+
+    if (invalidIds.length > 0) {
       return {
         success: false,
-        error: "Selected assignee is not a member of this workspace.",
+        error: "One or more selected assignees are not members of this workspace.",
       };
     }
   }
@@ -106,8 +120,9 @@ export async function updateTaskAction(
     updateData.description = validated.data.description?.trim() || null;
   if (validated.data.status !== undefined) updateData.status = validated.data.status;
   if (validated.data.priority !== undefined) updateData.priority = validated.data.priority;
-  if (validated.data.assigneeId !== undefined)
-    updateData.assignee_id = validated.data.assigneeId || null;
+  if (isAssigneeUpdating && targetAssigneeIds !== undefined) {
+    updateData.assignee_id = targetAssigneeIds[0] || null;
+  }
   if (validated.data.dueDate !== undefined) updateData.due_date = validated.data.dueDate || null;
   if (validated.data.position !== undefined) updateData.position = validated.data.position;
 
@@ -126,6 +141,52 @@ export async function updateTaskAction(
       success: false,
       error: "Failed to update task. Please try again.",
     };
+  }
+
+  // Sync task_assignees junction table
+  if (isAssigneeUpdating && targetAssigneeIds !== undefined) {
+    const { data: currentRows } = await supabase
+      .from("task_assignees")
+      .select("user_id")
+      .eq("task_id", taskId);
+
+    const currentIds = new Set(currentRows?.map((r) => r.user_id) || []);
+    const newIds = targetAssigneeIds.filter((id) => !currentIds.has(id));
+    const removedIds = [...currentIds].filter((id) => !targetAssigneeIds.includes(id));
+
+    if (removedIds.length > 0) {
+      await supabase
+        .from("task_assignees")
+        .delete()
+        .eq("task_id", taskId)
+        .in("user_id", removedIds);
+    }
+
+    if (newIds.length > 0) {
+      await supabase.from("task_assignees").insert(
+        newIds.map((uid) => ({
+          task_id: taskId,
+          user_id: uid,
+        }))
+      );
+
+      // Dispatch notification to newly assigned users
+      for (const recipientId of newIds) {
+        if (recipientId !== user.id) {
+          await createNotification({
+            workspaceId,
+            recipientId,
+            actorId: user.id,
+            type: "task_assigned",
+            title: "Task assigned to you",
+            message: `You were assigned to task "${updatedTask.title}".`,
+            entityType: "task",
+            entityId: taskId,
+            projectId,
+          });
+        }
+      }
+    }
   }
 
   // Record fine-grained activity event
@@ -161,10 +222,7 @@ export async function updateTaskAction(
           new_priority: updatedTask.priority,
         },
       });
-    } else if (
-      validated.data.assigneeId !== undefined &&
-      validated.data.assigneeId !== existingTask.assignee_id
-    ) {
+    } else if (isAssigneeUpdating) {
       await logActivity({
         workspaceId,
         projectId,
@@ -174,7 +232,9 @@ export async function updateTaskAction(
         action: "task_assigned",
         metadata: {
           task_title: updatedTask.title,
-          assignee_id: updatedTask.assignee_id,
+          old_assignee_id: existingTask.assignee_id,
+          new_assignee_id: updatedTask.assignee_id,
+          assignee_ids: targetAssigneeIds,
         },
       });
     } else if (
@@ -207,28 +267,8 @@ export async function updateTaskAction(
         },
       });
     }
-    // Dispatch in-app notifications
-    // 1. Task assigned to another user
-    if (
-      validated.data.assigneeId !== undefined &&
-      validated.data.assigneeId !== existingTask.assignee_id &&
-      validated.data.assigneeId &&
-      validated.data.assigneeId !== user.id
-    ) {
-      await createNotification({
-        workspaceId,
-        recipientId: validated.data.assigneeId,
-        actorId: user.id,
-        type: "task_assigned",
-        title: "Task assigned to you",
-        message: `You were assigned to task "${updatedTask.title}".`,
-        entityType: "task",
-        entityId: taskId,
-        projectId,
-      });
-    }
 
-    // 2. Status changed by someone else on assigned task
+    // Status changed notification to primary assignee
     if (
       validated.data.status !== undefined &&
       validated.data.status !== existingTask.status &&
@@ -248,7 +288,7 @@ export async function updateTaskAction(
       });
     }
 
-    // 3. Priority escalated to Urgent
+    // Priority escalated to Urgent notification
     if (
       validated.data.priority === "urgent" &&
       existingTask.priority !== "urgent" &&

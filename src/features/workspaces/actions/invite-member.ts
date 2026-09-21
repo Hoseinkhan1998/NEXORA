@@ -15,7 +15,6 @@ export interface InviteMemberResult {
   inviteUrl?: string;
 }
 
-
 /**
  * Creates an email-specific invitation to a workspace with an assigned role.
  * Restricted to workspace owners and administrators.
@@ -47,7 +46,10 @@ export async function inviteMemberByEmailAction(
 
   // 2. Authorize caller role (must be owner or admin)
   const callerMembership = await getWorkspaceMembership(workspaceId, user.id);
-  if (!callerMembership || (callerMembership.role !== "owner" && callerMembership.role !== "admin")) {
+  if (
+    !callerMembership ||
+    (callerMembership.role !== "owner" && callerMembership.role !== "admin")
+  ) {
     return {
       success: false,
       error: "Only workspace owners and administrators are permitted to invite members.",
@@ -122,7 +124,8 @@ export async function inviteMemberByEmailAction(
     .single();
 
   const workspaceName = wsData?.name || workspaceSlug;
-  const inviterName = callerProfile?.full_name || user.email?.split("@")[0] || "A team administrator";
+  const inviterName =
+    callerProfile?.full_name || user.email?.split("@")[0] || "A team administrator";
 
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL || "http://localhost:3000";
   const inviteUrl = `${baseUrl.replace(/\/$/, "")}/invite/${token}`;
@@ -145,14 +148,14 @@ export async function inviteMemberByEmailAction(
   };
 }
 
-
 /**
  * Retrieves an active shareable link invitation, or generates a new one.
  */
 export async function getOrCreateShareableInviteAction(
   workspaceId: string,
   workspaceSlug: string,
-  role: "admin" | "member" | "viewer" = "member"
+  role: "admin" | "member" | "viewer" = "member",
+  isSingleUse: boolean = false
 ): Promise<InviteMemberResult> {
   const supabase = await createClient();
 
@@ -165,35 +168,43 @@ export async function getOrCreateShareableInviteAction(
   }
 
   const callerMembership = await getWorkspaceMembership(workspaceId, user.id);
-  if (!callerMembership || (callerMembership.role !== "owner" && callerMembership.role !== "admin")) {
+  if (
+    !callerMembership ||
+    (callerMembership.role !== "owner" && callerMembership.role !== "admin")
+  ) {
     return {
       success: false,
       error: "Only owners and administrators can generate shareable invite links.",
     };
   }
 
-  // Check for an existing unexpired shareable link (email IS NULL)
-  const { data: existingLink } = await supabase
-    .from("workspace_invitations")
-    .select("token, expires_at")
-    .eq("workspace_id", workspaceId)
-    .is("email", null)
-    .eq("role", role)
-    .gt("expires_at", new Date().toISOString())
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+  // Check for an existing unexpired reusable link (only if not requesting a single-use link)
+  if (!isSingleUse) {
+    const { data: existingLink } = await supabase
+      .from("workspace_invitations")
+      .select("token, expires_at")
+      .eq("workspace_id", workspaceId)
+      .is("email", null)
+      .eq("role", role)
+      .eq("is_single_use", false)
+      .is("accepted_at", null)
+      .gt("expires_at", new Date().toISOString())
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
 
-  if (existingLink?.token) {
-    return {
-      success: true,
-      invitationToken: existingLink.token,
-    };
+    if (existingLink?.token) {
+      return {
+        success: true,
+        invitationToken: existingLink.token,
+      };
+    }
   }
 
-  // Create a new 30-day shareable token
+  // Create a new shareable token (single-use expires in 7 days, reusable in 30 days)
   const token = `link_${crypto.randomUUID().replace(/-/g, "")}${crypto.randomUUID().replace(/-/g, "")}`;
-  const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+  const days = isSingleUse ? 7 : 30;
+  const expiresAt = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();
 
   const { error: insertError } = await supabase.from("workspace_invitations").insert({
     workspace_id: workspaceId,
@@ -202,6 +213,7 @@ export async function getOrCreateShareableInviteAction(
     token,
     invited_by: user.id,
     expires_at: expiresAt,
+    is_single_use: isSingleUse,
   });
 
   if (insertError) {
@@ -239,7 +251,10 @@ export async function revokeInvitationAction(
   }
 
   const callerMembership = await getWorkspaceMembership(workspaceId, user.id);
-  if (!callerMembership || (callerMembership.role !== "owner" && callerMembership.role !== "admin")) {
+  if (
+    !callerMembership ||
+    (callerMembership.role !== "owner" && callerMembership.role !== "admin")
+  ) {
     return {
       success: false,
       error: "Only owners and administrators can revoke invitations.",

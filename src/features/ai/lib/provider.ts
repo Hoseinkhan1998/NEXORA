@@ -1,10 +1,6 @@
 import OpenAI from "openai";
 import type { CopilotRequestMessage } from "../types";
-import {
-  COPILOT_TOOLS,
-  executeCopilotTool,
-  type CopilotExecutionContext,
-} from "./copilot-tools";
+import { COPILOT_TOOLS, executeCopilotTool, type CopilotExecutionContext } from "./copilot-tools";
 
 export interface ProviderResultSuccess {
   success: true;
@@ -75,9 +71,7 @@ export function resolveAiConfiguration(): AiProviderConfig | null {
       provider: "openrouter",
       apiKey: process.env.OPENROUTER_API_KEY.trim(),
       baseURL: process.env.OPENROUTER_BASE_URL?.trim() || "https://openrouter.ai/api/v1",
-      model:
-        process.env.OPENROUTER_MODEL?.trim() ||
-        "meta-llama/llama-3.3-70b-instruct:free",
+      model: process.env.OPENROUTER_MODEL?.trim() || "meta-llama/llama-3.3-70b-instruct:free",
     };
   }
 
@@ -192,11 +186,7 @@ export async function generateCopilotResponse(
                 args = {};
               }
 
-              const toolResult = await executeCopilotTool(
-                toolCall.function.name,
-                args,
-                context
-              );
+              const toolResult = await executeCopilotTool(toolCall.function.name, args, context);
 
               if (toolResult.isMutation) {
                 hasMutations = true;

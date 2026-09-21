@@ -2,17 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/features/auth";
-import {
-  getInvitationDetailsAction,
-  getWorkspaceBySlug,
-} from "@/features/workspaces";
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardFooter,
-} from "@/components/ui/card";
+import { getInvitationDetailsAction, getWorkspaceBySlug } from "@/features/workspaces";
+import { Card, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { AlertTriangle, ArrowLeft } from "lucide-react";
 import { InviteAcceptanceCard } from "./invite-acceptance-card";
@@ -51,9 +42,7 @@ export default async function InvitePage({ params }: InvitePageProps) {
             <AlertTriangle className="h-7 w-7" />
           </div>
           <div className="space-y-1">
-            <CardTitle className="text-2xl font-bold tracking-tight">
-              Invalid Invitation
-            </CardTitle>
+            <CardTitle className="text-2xl font-bold tracking-tight">Invalid Invitation</CardTitle>
             <CardDescription className="text-sm">
               {details.error ||
                 "This invitation link is invalid, has expired, or has already been revoked."}
@@ -86,8 +75,6 @@ export default async function InvitePage({ params }: InvitePageProps) {
     }
   }
 
-
-
   return (
     <InviteAcceptanceCard
       token={token}
@@ -98,4 +85,3 @@ export default async function InvitePage({ params }: InvitePageProps) {
     />
   );
 }
-

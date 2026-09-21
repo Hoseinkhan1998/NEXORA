@@ -3,8 +3,8 @@
 import * as React from "react";
 import { TaskPriorityBadge } from "../task-priority-badge";
 import { EditTaskDialog } from "../edit-task-dialog";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Calendar, User, AlertCircle, MoreHorizontal, GripVertical } from "lucide-react";
+import { AssigneeAvatarStack } from "../assignee-avatar-stack";
+import { Calendar, AlertCircle, MoreHorizontal, GripVertical } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { TaskWithDetails, WorkspaceAssignee } from "../../types";
 import type { WorkspaceRole } from "@/features/workspaces/types";
@@ -41,9 +41,6 @@ export const KanbanCardInternal = React.forwardRef<HTMLDivElement, KanbanCardPro
     ref
   ) {
     const canEdit = userRole !== "viewer";
-
-    const assigneeName = task.assignee?.full_name || task.assignee?.email?.split("@")[0] || null;
-    const assigneeInitial = assigneeName ? assigneeName.charAt(0).toUpperCase() : "?";
 
     // Check if task is overdue (due_date in the past and not marked done)
     const isOverdue = React.useMemo(() => {
@@ -152,23 +149,14 @@ export const KanbanCardInternal = React.forwardRef<HTMLDivElement, KanbanCardPro
             <div />
           )}
 
-          {/* Assignee Avatar */}
-          <div
-            className="flex items-center gap-1.5 shrink-0"
-            title={assigneeName ? `Assigned to ${assigneeName}` : "Unassigned"}
-          >
-            {assigneeName ? (
-              <Avatar className="h-5 w-5 text-[10px]">
-                <AvatarFallback className="bg-primary/10 text-primary font-bold">
-                  {assigneeInitial}
-                </AvatarFallback>
-              </Avatar>
-            ) : (
-              <div className="flex h-5 w-5 items-center justify-center rounded-full bg-muted/60 text-muted-foreground/60">
-                <User className="h-3 w-3 opacity-50" />
-              </div>
-            )}
-          </div>
+          {/* Assignee Avatar Stack */}
+          <AssigneeAvatarStack
+            assignees={task.assignees}
+            fallbackAssignee={task.assignee}
+            size="xs"
+            maxDisplay={3}
+            showName={false}
+          />
         </div>
       </div>
     );

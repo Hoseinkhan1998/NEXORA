@@ -5,8 +5,8 @@ import { TableRow, TableCell } from "@/components/ui/table";
 import { TaskStatusBadge } from "../task-status-badge";
 import { TaskPriorityBadge } from "../task-priority-badge";
 import { EditTaskDialog } from "../edit-task-dialog";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Calendar, User, AlertCircle, MoreHorizontal } from "lucide-react";
+import { AssigneeAvatarStack } from "../assignee-avatar-stack";
+import { Calendar, AlertCircle, MoreHorizontal } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { TaskWithDetails, WorkspaceAssignee } from "../../types";
 import type { WorkspaceRole } from "@/features/workspaces/types";
@@ -29,9 +29,6 @@ function TaskTableRowInternal({
   userRole,
 }: TaskTableRowProps) {
   const canEdit = userRole !== "viewer";
-
-  const assigneeName = task.assignee?.full_name || task.assignee?.email?.split("@")[0] || null;
-  const assigneeInitial = assigneeName ? assigneeName.charAt(0).toUpperCase() : "?";
 
   // Check if task is overdue
   const isOverdue = React.useMemo(() => {
@@ -95,23 +92,13 @@ function TaskTableRowInternal({
 
       {/* 4. Assignee */}
       <TableCell className="whitespace-nowrap">
-        {assigneeName ? (
-          <div className="flex items-center gap-2" title={task.assignee?.email || assigneeName}>
-            <Avatar className="h-5 w-5 text-[10px]">
-              <AvatarFallback className="bg-primary/10 text-primary font-bold">
-                {assigneeInitial}
-              </AvatarFallback>
-            </Avatar>
-            <span className="text-xs font-medium text-foreground truncate max-w-[130px]">
-              {assigneeName}
-            </span>
-          </div>
-        ) : (
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground/60 italic">
-            <User className="h-3.5 w-3.5 opacity-50" />
-            <span>Unassigned</span>
-          </div>
-        )}
+        <AssigneeAvatarStack
+          assignees={task.assignees}
+          fallbackAssignee={task.assignee}
+          size="sm"
+          maxDisplay={3}
+          showName={true}
+        />
       </TableCell>
 
       {/* 5. Due Date */}

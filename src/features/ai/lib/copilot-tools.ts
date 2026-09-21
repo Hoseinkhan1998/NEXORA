@@ -49,7 +49,8 @@ export const COPILOT_TOOLS: OpenAI.Chat.Completions.ChatCompletionTool[] = [
         properties: {
           name: {
             type: "string",
-            description: "The name of the project to create (e.g. 'طراحی مجدد سایت' or 'Mobile App').",
+            description:
+              "The name of the project to create (e.g. 'طراحی مجدد سایت' or 'Mobile App').",
           },
           description: {
             type: "string",
@@ -57,7 +58,8 @@ export const COPILOT_TOOLS: OpenAI.Chat.Completions.ChatCompletionTool[] = [
           },
           color: {
             type: "string",
-            description: "Optional hex color code for project tagging, e.g. '#6366f1' or '#10b981'.",
+            description:
+              "Optional hex color code for project tagging, e.g. '#6366f1' or '#10b981'.",
           },
         },
         required: ["name"],
@@ -224,8 +226,7 @@ export const COPILOT_TOOLS: OpenAI.Chat.Completions.ChatCompletionTool[] = [
     type: "function",
     function: {
       name: "delete_task",
-      description:
-        "Permanently deletes a task. Requires workspace owner or admin permissions.",
+      description: "Permanently deletes a task. Requires workspace owner or admin permissions.",
       parameters: {
         type: "object",
         properties: {
@@ -291,11 +292,7 @@ export interface CopilotToolResult {
 /**
  * Finds a project by exact ID or case-insensitive / substring name.
  */
-async function resolveProject(
-  supabase: SupabaseClient,
-  workspaceId: string,
-  identifier?: string
-) {
+async function resolveProject(supabase: SupabaseClient, workspaceId: string, identifier?: string) {
   if (!identifier) {
     // Pick the most recent active project
     const { data: defaultProj } = await supabase
@@ -343,11 +340,7 @@ async function resolveProject(
 /**
  * Finds a task by exact ID or case-insensitive / substring title.
  */
-async function resolveTask(
-  supabase: SupabaseClient,
-  workspaceId: string,
-  identifier: string
-) {
+async function resolveTask(supabase: SupabaseClient, workspaceId: string, identifier: string) {
   const trimmed = identifier.trim();
   const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(trimmed);
 
@@ -859,9 +852,7 @@ export async function executeCopilotTool(
           query = query.eq("status", args.status);
         }
 
-        const { data: tasks } = await query
-          .order("created_at", { ascending: false })
-          .limit(50);
+        const { data: tasks } = await query.order("created_at", { ascending: false }).limit(50);
 
         return {
           success: true,

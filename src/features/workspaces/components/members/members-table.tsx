@@ -117,13 +117,12 @@ export function MembersTable({
 
           // Can caller remove this target?
           let canRemove = false;
-          if (isSelf && !isTargetOwner) canRemove = true; // self-leave
+          if (isSelf && !isTargetOwner)
+            canRemove = true; // self-leave
           else if (isOwner && !isTargetOwner) canRemove = true;
           else if (isAdmin && !isTargetOwner && !isTargetAdmin) canRemove = true;
 
-          const initials = (m.fullName || m.email || "U")
-            .slice(0, 2)
-            .toUpperCase();
+          const initials = (m.fullName || m.email || "U").slice(0, 2).toUpperCase();
 
           return (
             <div
@@ -205,7 +204,11 @@ export function MembersTable({
                     title={isSelf ? "Leave workspace" : "Remove member"}
                     aria-label={isSelf ? "Leave workspace" : "Remove member"}
                   >
-                    {isSelf ? <LogOut className="h-3.5 w-3.5" /> : <Trash2 className="h-3.5 w-3.5" />}
+                    {isSelf ? (
+                      <LogOut className="h-3.5 w-3.5" />
+                    ) : (
+                      <Trash2 className="h-3.5 w-3.5" />
+                    )}
                   </Button>
                 )}
               </div>
@@ -219,9 +222,7 @@ export function MembersTable({
         <DialogContent className="sm:max-w-md p-6">
           <DialogHeader className="text-left">
             <DialogTitle className="text-base font-semibold">
-              {memberToRemove?.userId === currentUserId
-                ? "Leave Workspace"
-                : "Remove Team Member"}
+              {memberToRemove?.userId === currentUserId ? "Leave Workspace" : "Remove Team Member"}
             </DialogTitle>
             <DialogDescription className="text-xs text-muted-foreground leading-relaxed">
               {memberToRemove?.userId === currentUserId
@@ -248,7 +249,9 @@ export function MembersTable({
               className="text-xs cursor-pointer gap-1.5"
             >
               {isPendingRemove && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-              <span>{memberToRemove?.userId === currentUserId ? "Leave Workspace" : "Remove Member"}</span>
+              <span>
+                {memberToRemove?.userId === currentUserId ? "Leave Workspace" : "Remove Member"}
+              </span>
             </Button>
           </DialogFooter>
         </DialogContent>

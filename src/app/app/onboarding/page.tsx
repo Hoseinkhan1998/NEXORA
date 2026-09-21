@@ -26,7 +26,6 @@ export default async function OnboardingPage() {
     }
   }
 
-
   return (
     <div className="flex min-h-screen flex-col bg-background selection:bg-primary selection:text-primary-foreground">
       {/* Header */}

@@ -125,7 +125,10 @@ export function SignupForm() {
       }
 
       const returnTo = searchParams.get("returnTo");
-      const safeRedirect = returnTo && returnTo.startsWith("/") && !returnTo.startsWith("//") ? returnTo : (result.redirectTo || "/app");
+      const safeRedirect =
+        returnTo && returnTo.startsWith("/") && !returnTo.startsWith("//")
+          ? returnTo
+          : result.redirectTo || "/app";
       router.push(safeRedirect);
       router.refresh();
     } catch {

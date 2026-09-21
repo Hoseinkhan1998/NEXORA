@@ -109,4 +109,3 @@ export async function sendInvitationEmail({
   // No email service configured
   return { sent: false, error: "No email provider configured." };
 }
-

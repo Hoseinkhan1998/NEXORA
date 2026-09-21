@@ -34,9 +34,12 @@ export default async function SettingsPage({ params }: SettingsPageProps) {
     redirect("/app");
   }
 
+  const canManageInvitations =
+    currentWorkspace.role === "owner" || currentWorkspace.role === "admin";
+
   const [members, invitations] = await Promise.all([
     getWorkspaceMembers(currentWorkspace.id),
-    getWorkspaceInvitations(currentWorkspace.id),
+    canManageInvitations ? getWorkspaceInvitations(currentWorkspace.id) : Promise.resolve([]),
   ]);
 
   return (
@@ -101,4 +104,3 @@ export default async function SettingsPage({ params }: SettingsPageProps) {
     </div>
   );
 }
-

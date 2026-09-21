@@ -14,7 +14,6 @@ export interface InvitationDetailsResult {
   alreadyMember?: boolean;
 }
 
-
 export interface AcceptInvitationResult {
   success: boolean;
   error?: string;
@@ -26,9 +25,7 @@ export interface AcceptInvitationResult {
 /**
  * Retrieves public details about an invitation token to display on /invite/[token].
  */
-export async function getInvitationDetailsAction(
-  token: string
-): Promise<InvitationDetailsResult> {
+export async function getInvitationDetailsAction(token: string): Promise<InvitationDetailsResult> {
   const cleanToken = token.trim();
   if (!cleanToken) {
     return { valid: false, error: "Missing invitation token." };
@@ -37,10 +34,9 @@ export async function getInvitationDetailsAction(
   const supabase = await createClient();
 
   // Try RPC helper first
-  const { data: rpcData, error: rpcError } = await supabase.rpc(
-    "get_invitation_details",
-    { p_token: cleanToken }
-  );
+  const { data: rpcData, error: rpcError } = await supabase.rpc("get_invitation_details", {
+    p_token: cleanToken,
+  });
 
   if (!rpcError && rpcData && typeof rpcData === "object") {
     const res = rpcData as Record<string, unknown>;
@@ -61,7 +57,6 @@ export async function getInvitationDetailsAction(
       workspaceSlug: res.workspace_slug ? String(res.workspace_slug) : undefined,
     };
   }
-
 
   // Fallback direct query
   const { data: invite, error: inviteError } = await supabase
@@ -100,7 +95,6 @@ export async function getInvitationDetailsAction(
     };
   }
 
-
   if (new Date(invite.expires_at).getTime() < Date.now()) {
     return { valid: false, error: "This invitation link has expired." };
   }
@@ -121,9 +115,7 @@ export async function getInvitationDetailsAction(
 /**
  * Accepts an invitation and links current authenticated user to the workspace.
  */
-export async function acceptInvitationAction(
-  token: string
-): Promise<AcceptInvitationResult> {
+export async function acceptInvitationAction(token: string): Promise<AcceptInvitationResult> {
   const cleanToken = token.trim();
   const supabase = await createClient();
 
@@ -136,10 +128,9 @@ export async function acceptInvitationAction(
   }
 
   // 1. Try RPC first (atomic & security definer)
-  const { data: rpcData, error: rpcError } = await supabase.rpc(
-    "accept_workspace_invitation",
-    { p_token: cleanToken }
-  );
+  const { data: rpcData, error: rpcError } = await supabase.rpc("accept_workspace_invitation", {
+    p_token: cleanToken,
+  });
 
   if (rpcError) {
     console.error("[acceptInvitationAction] RPC call error:", rpcError);
@@ -191,7 +182,6 @@ export async function acceptInvitationAction(
     const fallbackMsg = rpcError ? rpcError.message : "Invalid invitation.";
     return { success: false, error: fallbackMsg };
   }
-
 
   if (invite.accepted_at && invite.email) {
     return { success: false, error: "This invitation has already been used." };

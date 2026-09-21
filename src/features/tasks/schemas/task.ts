@@ -20,6 +20,7 @@ export const createTaskSchema = z.object({
     .nullable()
     .optional()
     .or(z.literal("")),
+  assigneeIds: z.array(z.string().uuid({ message: "Invalid assignee ID" })).optional(),
   dueDate: z
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/, { message: "Due date must be in YYYY-MM-DD format" })
@@ -52,6 +53,7 @@ export const updateTaskSchema = z.object({
     .nullable()
     .optional()
     .or(z.literal("")),
+  assigneeIds: z.array(z.string().uuid({ message: "Invalid assignee ID" })).optional(),
   dueDate: z
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/, { message: "Due date must be in YYYY-MM-DD format" })

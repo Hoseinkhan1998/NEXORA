@@ -19,7 +19,9 @@ describe("Copilot Storage & Session Management", () => {
   it("derives a clean short session title from the first prompt", () => {
     expect(deriveSessionTitle("Hello world")).toBe("Hello world");
     expect(
-      deriveSessionTitle("Can you please help me create a comprehensive marketing strategy for our product?")
+      deriveSessionTitle(
+        "Can you please help me create a comprehensive marketing strategy for our product?"
+      )
     ).toBe("Can you please help me create a comp...");
   });
 

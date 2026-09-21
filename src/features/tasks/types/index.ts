@@ -33,6 +33,7 @@ export interface TaskCreator {
 
 export interface TaskWithDetails extends Task {
   assignee: TaskAssignee | null;
+  assignees: TaskAssignee[];
   creator?: TaskCreator | null;
 }
 
@@ -50,6 +51,7 @@ export interface CreateTaskInput {
   status?: TaskStatus;
   priority?: TaskPriority;
   assigneeId?: string | null;
+  assigneeIds?: string[];
   dueDate?: string | null;
   position?: number;
 }
@@ -60,6 +62,7 @@ export interface UpdateTaskInput {
   status?: TaskStatus;
   priority?: TaskPriority;
   assigneeId?: string | null;
+  assigneeIds?: string[];
   dueDate?: string | null;
   position?: number;
 }

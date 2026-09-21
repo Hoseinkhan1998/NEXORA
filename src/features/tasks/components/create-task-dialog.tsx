@@ -22,6 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { MultiAssigneeSelect } from "./multi-assignee-select";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Plus, AlertCircle } from "lucide-react";
 import { createTaskAction } from "../actions/create-task";
@@ -49,7 +50,7 @@ export function CreateTaskDialog({
   const [description, setDescription] = React.useState("");
   const [status, setStatus] = React.useState<TaskStatus>("todo");
   const [priority, setPriority] = React.useState<TaskPriority>("medium");
-  const [assigneeId, setAssigneeId] = React.useState<string>("unassigned");
+  const [selectedAssigneeIds, setSelectedAssigneeIds] = React.useState<string[]>([]);
   const [dueDate, setDueDate] = React.useState<string>("");
   const [errors, setErrors] = React.useState<Record<string, string>>({});
   const [generalError, setGeneralError] = React.useState<string | null>(null);
@@ -60,7 +61,7 @@ export function CreateTaskDialog({
     setDescription("");
     setStatus("todo");
     setPriority("medium");
-    setAssigneeId("unassigned");
+    setSelectedAssigneeIds([]);
     setDueDate("");
     setErrors({});
     setGeneralError(null);
@@ -79,14 +80,13 @@ export function CreateTaskDialog({
     setGeneralError(null);
     setErrors({});
 
-    const chosenAssigneeId = assigneeId === "unassigned" ? null : assigneeId;
-
     const validation = createTaskSchema.safeParse({
       title,
       description: description || undefined,
       status,
       priority,
-      assigneeId: chosenAssigneeId || undefined,
+      assigneeId: selectedAssigneeIds[0] || undefined,
+      assigneeIds: selectedAssigneeIds.length > 0 ? selectedAssigneeIds : undefined,
       dueDate: dueDate || undefined,
     });
 
@@ -108,7 +108,8 @@ export function CreateTaskDialog({
       if (description) formData.set("description", description);
       formData.set("status", status);
       formData.set("priority", priority);
-      if (chosenAssigneeId) formData.set("assigneeId", chosenAssigneeId);
+      selectedAssigneeIds.forEach((id) => formData.append("assigneeIds", id));
+      if (selectedAssigneeIds[0]) formData.set("assigneeId", selectedAssigneeIds[0]);
       if (dueDate) formData.set("dueDate", dueDate);
 
       const result = await createTaskAction(workspaceId, projectId, workspaceSlug, null, formData);
@@ -238,23 +239,15 @@ export function CreateTaskDialog({
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label htmlFor="task-assignee" className="text-xs font-semibold">
-                  Assignee
+                  Assignees
                 </Label>
-                <Select value={assigneeId} onValueChange={setAssigneeId} disabled={isPending}>
-                  <SelectTrigger id="task-assignee" className="w-full">
-                    <SelectValue placeholder="Unassigned" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="unassigned">Unassigned</SelectItem>
-                    {assignees.map((member) => (
-                      <SelectItem key={member.userId} value={member.userId}>
-                        <span className="truncate">
-                          {member.fullName || member.email.split("@")[0]}
-                        </span>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <MultiAssigneeSelect
+                  assignees={assignees}
+                  selectedIds={selectedAssigneeIds}
+                  onChange={setSelectedAssigneeIds}
+                  disabled={isPending}
+                  placeholder="Select assignees..."
+                />
               </div>
 
               <div className="space-y-1.5">

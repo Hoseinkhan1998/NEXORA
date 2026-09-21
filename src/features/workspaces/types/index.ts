@@ -38,6 +38,7 @@ export interface WorkspaceInvitation {
   invitedByName?: string;
   expiresAt: string;
   createdAt: string;
+  isSingleUse?: boolean;
 }
 
 export interface WorkspaceWithRole extends Workspace {

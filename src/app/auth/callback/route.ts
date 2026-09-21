@@ -53,7 +53,8 @@ export async function GET(request: Request) {
       }
 
       // Ensure destination is relative
-      const safeDestination = destination.startsWith("/") && !destination.startsWith("//") ? destination : "/app";
+      const safeDestination =
+        destination.startsWith("/") && !destination.startsWith("//") ? destination : "/app";
       const response = NextResponse.redirect(`${origin}${safeDestination}`);
       response.cookies.delete("nexora_oauth_next");
       return response;
@@ -62,7 +63,6 @@ export async function GET(request: Request) {
       const message = encodeURIComponent(error.message || "Failed to exchange session");
       return NextResponse.redirect(`${origin}/login?error=${message}`);
     }
-
   }
 
   return NextResponse.redirect(`${origin}/login?error=auth_callback_failed`);

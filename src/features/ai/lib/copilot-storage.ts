@@ -31,9 +31,7 @@ export function getWorkspaceSessions(workspaceSlug: string): CopilotSession[] {
     if (!raw) return [];
     const parsed = JSON.parse(raw);
     if (!Array.isArray(parsed)) return [];
-    return parsed.sort(
-      (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
-    );
+    return parsed.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
   } catch (err) {
     console.error("[copilot-storage] Failed to load sessions:", err);
     return [];
@@ -43,16 +41,10 @@ export function getWorkspaceSessions(workspaceSlug: string): CopilotSession[] {
 /**
  * Persists all chat sessions for a workspace into localStorage.
  */
-export function saveWorkspaceSessions(
-  workspaceSlug: string,
-  sessions: CopilotSession[]
-): void {
+export function saveWorkspaceSessions(workspaceSlug: string, sessions: CopilotSession[]): void {
   if (typeof window === "undefined") return;
   try {
-    localStorage.setItem(
-      `${STORAGE_PREFIX}${workspaceSlug}`,
-      JSON.stringify(sessions)
-    );
+    localStorage.setItem(`${STORAGE_PREFIX}${workspaceSlug}`, JSON.stringify(sessions));
   } catch (err) {
     console.error("[copilot-storage] Failed to save sessions:", err);
   }
@@ -109,10 +101,7 @@ export function createNewSession(
 /**
  * Deletes a session by ID and returns the remaining sessions.
  */
-export function deleteSession(
-  workspaceSlug: string,
-  sessionId: string
-): CopilotSession[] {
+export function deleteSession(workspaceSlug: string, sessionId: string): CopilotSession[] {
   const existing = getWorkspaceSessions(workspaceSlug);
   const updated = existing.filter((s) => s.id !== sessionId);
   saveWorkspaceSessions(workspaceSlug, updated);

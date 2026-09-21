@@ -3,6 +3,7 @@
 import * as React from "react";
 import { TimelineTaskEvent } from "./timeline-task-event";
 import { EditTaskDialog } from "../edit-task-dialog";
+import { AssigneeAvatarStack } from "../assignee-avatar-stack";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import {
@@ -39,10 +40,6 @@ export function TimelineRow({
   const statusLabel = task.status.replace("_", " ");
   const isDone = task.status === "done";
 
-  const assigneeName = task.assignee
-    ? task.assignee.full_name || task.assignee.email.split("@")[0]
-    : null;
-
   const leftTriggerContent = (
     <div
       className={cn(
@@ -69,11 +66,13 @@ export function TimelineRow({
         >
           {statusLabel}
         </Badge>
-        {assigneeName && (
-          <span className="text-[10px] text-muted-foreground truncate max-w-[70px]">
-            {assigneeName}
-          </span>
-        )}
+        <AssigneeAvatarStack
+          assignees={task.assignees}
+          fallbackAssignee={task.assignee}
+          size="xs"
+          showName={false}
+          maxDisplay={2}
+        />
       </div>
     </div>
   );

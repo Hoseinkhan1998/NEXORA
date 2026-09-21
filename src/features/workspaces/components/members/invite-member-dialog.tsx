@@ -20,6 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { UserPlus, Mail, Link as LinkIcon, Check, Copy, AlertCircle, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -45,11 +46,16 @@ export function InviteMemberDialog({
   const [email, setEmail] = useState("");
   const [emailRole, setEmailRole] = useState<"admin" | "member" | "viewer">("member");
   const [emailError, setEmailError] = useState<string | null>(null);
-  const [createdInvite, setCreatedInvite] = useState<{ email: string; inviteUrl: string; token: string } | null>(null);
+  const [createdInvite, setCreatedInvite] = useState<{
+    email: string;
+    inviteUrl: string;
+    token: string;
+  } | null>(null);
   const [isPendingEmail, startEmailTransition] = useTransition();
 
   // Shareable link state
   const [linkRole, setLinkRole] = useState<"admin" | "member" | "viewer">("member");
+  const [isSingleUse, setIsSingleUse] = useState(false);
   const [shareableToken, setShareableToken] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [isPendingLink, startLinkTransition] = useTransition();
@@ -58,13 +64,18 @@ export function InviteMemberDialog({
   useEffect(() => {
     if (open && activeTab === "link" && !shareableToken) {
       startLinkTransition(async () => {
-        const res = await getOrCreateShareableInviteAction(workspaceId, workspaceSlug, linkRole);
+        const res = await getOrCreateShareableInviteAction(
+          workspaceId,
+          workspaceSlug,
+          linkRole,
+          isSingleUse
+        );
         if (res.success && res.invitationToken) {
           setShareableToken(res.invitationToken);
         }
       });
     }
-  }, [open, activeTab, linkRole, workspaceId, workspaceSlug, shareableToken]);
+  }, [open, activeTab, linkRole, isSingleUse, workspaceId, workspaceSlug, shareableToken]);
 
   const handleSendEmail = (e: React.FormEvent) => {
     e.preventDefault();
@@ -103,7 +114,6 @@ export function InviteMemberDialog({
       }
     });
   };
-
 
   const handleCopyLink = () => {
     if (!shareableToken) return;
@@ -162,7 +172,8 @@ export function InviteMemberDialog({
                     <span>Invitation Ready for {createdInvite.email}</span>
                   </div>
                   <p className="text-[11px] text-muted-foreground leading-relaxed">
-                    Automated email service is not configured in the environment. Send this direct invitation link to your teammate:
+                    Automated email service is not configured in the environment. Send this direct
+                    invitation link to your teammate:
                   </p>
                 </div>
 
@@ -258,9 +269,7 @@ export function InviteMemberDialog({
                       </SelectItem>
                     </SelectContent>
                   </Select>
-                  <p className="text-[11px] text-muted-foreground">
-                    {roleDescriptions[emailRole]}
-                  </p>
+                  <p className="text-[11px] text-muted-foreground">{roleDescriptions[emailRole]}</p>
                 </div>
 
                 {emailError && (
@@ -295,7 +304,6 @@ export function InviteMemberDialog({
             )}
           </TabsContent>
 
-
           {/* TAB 2: Shareable Link */}
           <TabsContent value="link" className="space-y-4 pt-3">
             <div className="space-y-3">
@@ -325,9 +333,31 @@ export function InviteMemberDialog({
                     </SelectItem>
                   </SelectContent>
                 </Select>
-                <p className="text-[11px] text-muted-foreground">
-                  {roleDescriptions[linkRole]}
-                </p>
+                <p className="text-[11px] text-muted-foreground">{roleDescriptions[linkRole]}</p>
+              </div>
+
+              <div className="flex items-start space-x-2.5 p-2.5 rounded-lg border border-border/50 bg-muted/20">
+                <Checkbox
+                  id="single-use-checkbox"
+                  checked={isSingleUse}
+                  onCheckedChange={(checked) => {
+                    setIsSingleUse(Boolean(checked));
+                    setShareableToken(null);
+                  }}
+                  disabled={isPendingLink}
+                  className="mt-0.5"
+                />
+                <div className="grid gap-0.5 leading-tight">
+                  <Label
+                    htmlFor="single-use-checkbox"
+                    className="text-xs font-medium cursor-pointer"
+                  >
+                    Single-use link (Expires after first join)
+                  </Label>
+                  <p className="text-[11px] text-muted-foreground">
+                    Automatically invalidates this link as soon as one person accepts it.
+                  </p>
+                </div>
               </div>
 
               <div className="space-y-1.5">
@@ -365,7 +395,8 @@ export function InviteMemberDialog({
               </div>
 
               <div className="p-3 rounded-lg bg-muted/40 border border-border/60 text-[11px] text-muted-foreground leading-relaxed">
-                Anyone with this link can create an account or sign in to join this workspace with the assigned role. Link is valid for 30 days.
+                Anyone with this link can create an account or sign in to join this workspace with
+                the assigned role. Link is valid for 30 days.
               </div>
             </div>
           </TabsContent>

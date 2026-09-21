@@ -1,11 +1,7 @@
 import { z } from "zod";
 
 export const inviteMemberSchema = z.object({
-  email: z
-    .string()
-    .trim()
-    .toLowerCase()
-    .email("Please enter a valid email address."),
+  email: z.string().trim().toLowerCase().email("Please enter a valid email address."),
   role: z
     .enum(["admin", "member", "viewer"], {
       message: "Please select a valid role (Admin, Member, or Viewer).",

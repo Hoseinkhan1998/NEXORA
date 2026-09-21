@@ -13,9 +13,20 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Building2, ShieldCheck, ArrowRight, LogIn, UserPlus, Loader2, CheckCircle2 } from "lucide-react";
+import {
+  Building2,
+  ShieldCheck,
+  ArrowRight,
+  LogIn,
+  UserPlus,
+  Loader2,
+  CheckCircle2,
+} from "lucide-react";
 import { toast } from "sonner";
-import { acceptInvitationAction, type InvitationDetailsResult } from "@/features/workspaces/actions/accept-invitation";
+import {
+  acceptInvitationAction,
+  type InvitationDetailsResult,
+} from "@/features/workspaces/actions/accept-invitation";
 
 interface InviteAcceptanceCardProps {
   token: string;
@@ -48,14 +59,11 @@ export function InviteAcceptanceCard({
       const targetSlug = res.workspaceSlug || details.workspaceSlug;
       if (typeof document !== "undefined") {
         document.cookie = "nexora_pending_invite_token=; path=/; max-age=0";
-        window.location.href = `/app/${targetSlug}`;
-      } else {
-        router.push(`/app/${targetSlug}`);
       }
+      router.push(`/app/${targetSlug}`);
+      router.refresh();
     });
   };
-
-
 
   return (
     <Card className="w-full max-w-md shadow-lg border-border/60">
@@ -97,11 +105,15 @@ export function InviteAcceptanceCard({
           )}
         </div>
 
-        {isAuthenticated && currentUserEmail && details.email && currentUserEmail.toLowerCase() !== details.email.toLowerCase() && (
-          <p className="text-[11px] text-amber-600 dark:text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded p-2 text-center">
-            You are signed in as <span className="font-mono">{currentUserEmail}</span>. Accepting will add this account to the workspace.
-          </p>
-        )}
+        {isAuthenticated &&
+          currentUserEmail &&
+          details.email &&
+          currentUserEmail.toLowerCase() !== details.email.toLowerCase() && (
+            <p className="text-[11px] text-amber-600 dark:text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded p-2 text-center">
+              You are signed in as <span className="font-mono">{currentUserEmail}</span>. Accepting
+              will add this account to the workspace.
+            </p>
+          )}
       </CardContent>
 
       <CardFooter className="flex flex-col gap-3 pt-2">
@@ -118,11 +130,7 @@ export function InviteAcceptanceCard({
             </Link>
           </Button>
         ) : isAuthenticated ? (
-          <Button
-            onClick={handleAccept}
-            disabled={isPending}
-            className="w-full gap-2"
-          >
+          <Button onClick={handleAccept} disabled={isPending} className="w-full gap-2">
             {isPending ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />

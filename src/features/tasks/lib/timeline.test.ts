@@ -23,7 +23,9 @@ function mockTask(partial: Partial<TaskWithDetails>): TaskWithDetails {
     created_by: "u-1",
     created_at: "2026-09-01T10:00:00Z",
     updated_at: "2026-09-01T10:00:00Z",
-    assignee: null,
+    assignee: partial.assignee ?? null,
+    assignees: partial.assignees ?? (partial.assignee ? [partial.assignee] : []),
+    ...partial,
   };
 }
 

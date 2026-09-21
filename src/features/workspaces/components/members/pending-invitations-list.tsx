@@ -27,7 +27,7 @@ export function PendingInvitationsList({
 
   const canManage = currentUserRole === "owner" || currentUserRole === "admin";
 
-  if (!invitations || invitations.length === 0) {
+  if (!canManage || !invitations || invitations.length === 0) {
     return null;
   }
 
@@ -101,20 +101,27 @@ export function PendingInvitationsList({
             >
               <div className="flex items-center gap-3 min-w-0">
                 <div className="h-9 w-9 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0">
-                  {isEmailInvite ? (
-                    <Mail className="h-4 w-4" />
-                  ) : (
-                    <Link2 className="h-4 w-4" />
-                  )}
+                  {isEmailInvite ? <Mail className="h-4 w-4" /> : <Link2 className="h-4 w-4" />}
                 </div>
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-medium text-foreground truncate">
                       {isEmailInvite ? inv.email : "Shareable Join Link"}
                     </span>
-                    <Badge variant={getRoleBadgeVariant(inv.role)} className="capitalize text-[10px] px-1.5 py-0 h-4">
+                    <Badge
+                      variant={getRoleBadgeVariant(inv.role)}
+                      className="capitalize text-[10px] px-1.5 py-0 h-4"
+                    >
                       {inv.role}
                     </Badge>
+                    {inv.isSingleUse && (
+                      <Badge
+                        variant="outline"
+                        className="text-[10px] px-1.5 py-0 h-4 border-amber-500/30 text-amber-600 dark:text-amber-400"
+                      >
+                        Single-Use
+                      </Badge>
+                    )}
                   </div>
                   <div className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5">
                     <Clock className="h-3 w-3" />

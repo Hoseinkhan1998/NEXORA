@@ -24,5 +24,4 @@ export default async function AppIndexPage() {
 
   // Deterministically redirect to the user's primary/first accessible workspace
   redirect(`/app/${firstWorkspace.slug}`);
-
 }

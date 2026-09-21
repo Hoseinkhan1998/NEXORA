@@ -4,8 +4,8 @@ import * as React from "react";
 import { TaskStatusBadge } from "./task-status-badge";
 import { TaskPriorityBadge } from "./task-priority-badge";
 import { EditTaskDialog } from "./edit-task-dialog";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Calendar, User } from "lucide-react";
+import { AssigneeAvatarStack } from "./assignee-avatar-stack";
+import { Calendar } from "lucide-react";
 import type { TaskWithDetails, WorkspaceAssignee } from "../types";
 import type { WorkspaceRole } from "@/features/workspaces/types";
 
@@ -27,10 +27,6 @@ export function TaskItem({
   userRole,
 }: TaskItemProps) {
   const canEdit = userRole !== "viewer";
-
-  const assigneeName = task.assignee?.full_name || task.assignee?.email?.split("@")[0] || null;
-
-  const assigneeInitial = assigneeName ? assigneeName.charAt(0).toUpperCase() : "?";
 
   const formattedDueDate = task.due_date
     ? new Date(task.due_date + "T00:00:00").toLocaleDateString("en-US", {
@@ -71,28 +67,13 @@ export function TaskItem({
         ) : null}
 
         {/* Assignee */}
-        <div
-          className="flex items-center gap-1.5 min-w-[90px]"
-          title={assigneeName || "Unassigned"}
-        >
-          {assigneeName ? (
-            <div className="flex items-center gap-1.5 truncate">
-              <Avatar className="h-5 w-5 text-[10px]">
-                <AvatarFallback className="bg-primary/10 text-primary font-bold">
-                  {assigneeInitial}
-                </AvatarFallback>
-              </Avatar>
-              <span className="truncate max-w-[80px] text-[11px] font-medium text-foreground">
-                {assigneeName}
-              </span>
-            </div>
-          ) : (
-            <div className="flex items-center gap-1 text-[11px] text-muted-foreground/60 italic">
-              <User className="h-3 w-3 opacity-50" />
-              <span>Unassigned</span>
-            </div>
-          )}
-        </div>
+        <AssigneeAvatarStack
+          assignees={task.assignees}
+          fallbackAssignee={task.assignee}
+          size="xs"
+          maxDisplay={3}
+          showName={true}
+        />
 
         {/* Edit Task Action */}
         {canEdit && (

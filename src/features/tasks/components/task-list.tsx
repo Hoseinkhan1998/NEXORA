@@ -51,7 +51,11 @@ export function TaskList({
         const matchesDesc = task.description?.toLowerCase().includes(query);
         const matchesAssignee =
           task.assignee?.full_name?.toLowerCase().includes(query) ||
-          task.assignee?.email?.toLowerCase().includes(query);
+          task.assignee?.email?.toLowerCase().includes(query) ||
+          task.assignees?.some(
+            (a) =>
+              a.full_name?.toLowerCase().includes(query) || a.email?.toLowerCase().includes(query)
+          );
 
         return matchesTitle || matchesDesc || matchesAssignee;
       }
