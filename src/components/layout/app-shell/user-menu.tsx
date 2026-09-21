@@ -24,7 +24,8 @@ import {
 } from "@/components/ui/dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Settings, LogOut } from "lucide-react";
+import { Settings, LogOut, Compass } from "lucide-react";
+import { useProductTour } from "@/features/tour";
 
 interface UserMenuProps {
   user: User | null;
@@ -34,6 +35,8 @@ interface UserMenuProps {
 export function UserMenu({ user, profile }: UserMenuProps) {
   const [isLoggingOut, startTransition] = React.useTransition();
   const [showSignOutDialog, setShowSignOutDialog] = React.useState(false);
+
+  const { startTour } = useProductTour();
 
   const displayName = profile?.fullName || user?.user_metadata?.full_name || "User";
   const displayEmail = profile?.email || user?.email || "";
@@ -96,6 +99,13 @@ export function UserMenu({ user, profile }: UserMenuProps) {
                 <Settings className="h-4 w-4 text-muted-foreground" />
                 <span>Settings</span>
               </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              className="cursor-pointer flex items-center gap-2"
+              onClick={() => startTour(true)}
+            >
+              <Compass className="h-4 w-4 text-muted-foreground" />
+              <span>Product Tour</span>
             </DropdownMenuItem>
           </DropdownMenuGroup>
 

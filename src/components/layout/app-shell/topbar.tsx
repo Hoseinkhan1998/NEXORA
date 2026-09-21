@@ -28,7 +28,10 @@ export function Topbar({ user, profile, currentWorkspace, workspaces = [] }: Top
 
       {/* Center: Command Palette Trigger & Dialog */}
       {currentWorkspace && (
-        <div className="flex items-center justify-center flex-1 max-w-xs mx-3">
+        <div
+          id="tour-command-bar"
+          className="flex items-center justify-center flex-1 max-w-xs mx-3"
+        >
           <CommandBar
             workspaceSlug={currentWorkspace.slug}
             workspaceId={currentWorkspace.id}
@@ -45,23 +48,29 @@ export function Topbar({ user, profile, currentWorkspace, workspaces = [] }: Top
       {/* Right section: copilot trigger + theme toggle + notifications + user menu */}
       <div className="flex items-center gap-2 sm:gap-3 shrink-0">
         {/* AI Copilot trigger */}
-        <CopilotTrigger
-          workspaceSlug={currentWorkspace?.slug}
-          workspaceName={currentWorkspace?.name}
-        />
+        <div id="tour-copilot-trigger">
+          <CopilotTrigger
+            workspaceSlug={currentWorkspace?.slug}
+            workspaceName={currentWorkspace?.name}
+          />
+        </div>
 
         {/* In-app Notification Center */}
-        <NotificationCenter
-          userId={user?.id}
-          workspaceId={currentWorkspace?.id}
-          workspaceSlug={currentWorkspace?.slug}
-        />
+        <div id="tour-notifications">
+          <NotificationCenter
+            userId={user?.id}
+            workspaceId={currentWorkspace?.id}
+            workspaceSlug={currentWorkspace?.slug}
+          />
+        </div>
 
         {/* Theme switcher */}
         <ThemeToggle />
 
         {/* User account dropdown */}
-        <UserMenu user={user} profile={profile} />
+        <div id="tour-user-menu">
+          <UserMenu user={user} profile={profile} />
+        </div>
       </div>
     </header>
   );

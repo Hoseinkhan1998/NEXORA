@@ -8,6 +8,7 @@ import { getPrimaryNavItems, getSecondaryNavItems, type NavItem } from "./nav-co
 import { WorkspaceSwitcher } from "@/features/workspaces/components/workspace-switcher";
 import type { WorkspaceWithRole } from "@/features/workspaces/types";
 import { Badge } from "@/components/ui/badge";
+import { TourTriggerButton } from "@/features/tour";
 
 export interface SidebarProps {
   className?: string;
@@ -66,7 +67,7 @@ export function Sidebar({
       </div>
 
       {/* Real Workspace Switcher */}
-      <div className="p-3 border-b border-border/40">
+      <div id="tour-workspace-switcher" className="p-3 border-b border-border/40">
         <WorkspaceSwitcher
           currentWorkspace={currentWorkspace}
           workspaces={workspaces}
@@ -84,10 +85,17 @@ export function Sidebar({
             {primaryItems.map((item) => {
               const active = isItemActive(item);
               const Icon = item.icon;
+              const tourId =
+                item.title === "Projects"
+                  ? "tour-nav-projects"
+                  : item.title === "Analytics"
+                    ? "tour-nav-analytics"
+                    : undefined;
 
               return (
                 <Link
                   key={item.href}
+                  id={tourId}
                   href={item.href}
                   onClick={onNavigate}
                   aria-current={active ? "page" : undefined}
@@ -132,11 +140,13 @@ export function Sidebar({
             {secondaryItems.map((item) => {
               const active = isItemActive(item);
               const Icon = item.icon;
+              const tourId = item.title === "Settings" ? "tour-nav-settings" : undefined;
 
               if (item.disabled) {
                 return (
                   <div
                     key={item.title}
+                    id={tourId}
                     className="flex items-center justify-between rounded-md px-3 py-2 text-sm font-medium text-muted-foreground/50 cursor-not-allowed select-none"
                     aria-disabled="true"
                   >
@@ -152,6 +162,7 @@ export function Sidebar({
               return (
                 <Link
                   key={item.href}
+                  id={tourId}
                   href={item.href}
                   onClick={onNavigate}
                   aria-current={active ? "page" : undefined}
@@ -180,8 +191,12 @@ export function Sidebar({
         </div>
       </div>
 
-      {/* Footer / System Status */}
-      <div className="p-3 border-t border-border/40">
+      {/* Footer / System Status & Tour Trigger */}
+      <div className="p-3 border-t border-border/40 space-y-2">
+        <TourTriggerButton
+          className="w-full justify-start px-2.5 py-1.5 h-8 border border-border/40 bg-muted/20 hover:bg-accent text-xs"
+          label="Take a Tour"
+        />
         <div className="flex items-center justify-between px-3 py-2 rounded-md bg-muted/40 text-[11px] text-muted-foreground">
           <span className="inline-flex items-center gap-1.5 font-medium">
             <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
