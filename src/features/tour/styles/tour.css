@@ -5,33 +5,42 @@
 
 @import "driver.js/dist/driver.css";
 
-/* Backdrop Overlay */
+/* Backdrop Overlay: SVG container must remain transparent so the cutout hole is crystal clear */
 .driver-overlay {
-  background-color: rgba(0, 0, 0, 0.7) !important;
-  backdrop-filter: blur(4px) !important;
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  backdrop-filter: none !important;
 }
 
-/* Active Highlighted Element Stage */
+.driver-overlay path {
+  transition:
+    d 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 0.25s ease !important;
+}
+
+/* Active Highlighted Element Stage: crystal clear view with vibrant focus ring */
 .driver-active-element {
   outline: 2px solid var(--primary, #6366f1) !important;
   outline-offset: 4px !important;
-  box-shadow: 0 0 25px -5px rgba(99, 102, 241, 0.45) !important;
+  box-shadow: 0 0 24px -2px rgba(99, 102, 241, 0.45) !important;
   border-radius: 8px !important;
+  position: relative !important;
+  z-index: 10001 !important;
 }
 
 /* Main Popover Card */
 .driver-popover {
-  background: var(--card, #0f172a) !important;
-  color: var(--card-foreground, #f8fafc) !important;
-  border: 1px solid var(--border, rgba(255, 255, 255, 0.12)) !important;
+  background: #090d16 !important;
+  color: #f8fafc !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
   border-radius: 1rem !important;
-  padding: 1.25rem !important;
+  padding: 1.25rem 1.4rem !important;
   box-shadow:
-    0 20px 40px -15px rgba(0, 0, 0, 0.5),
-    0 0 0 1px rgba(255, 255, 255, 0.05) !important;
-  backdrop-filter: blur(16px) !important;
-  max-width: 380px !important;
+    0 24px 48px -12px rgba(0, 0, 0, 0.75),
+    0 0 0 1px rgba(255, 255, 255, 0.08) !important;
+  backdrop-filter: blur(20px) !important;
+  min-width: 320px !important;
+  max-width: 400px !important;
   font-family: inherit !important;
   animation: nexora-tour-popover-in 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
   z-index: 100000 !important;
@@ -50,43 +59,74 @@
 
 /* Popover Arrow */
 .driver-popover-arrow {
-  border-color: var(--border, rgba(255, 255, 255, 0.12)) !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
 }
 
 .driver-popover-arrow-side-top {
-  border-top-color: var(--card, #0f172a) !important;
+  border-top-color: #090d16 !important;
 }
 
 .driver-popover-arrow-side-bottom {
-  border-bottom-color: var(--card, #0f172a) !important;
+  border-bottom-color: #090d16 !important;
 }
 
 .driver-popover-arrow-side-left {
-  border-left-color: var(--card, #0f172a) !important;
+  border-left-color: #090d16 !important;
 }
 
 .driver-popover-arrow-side-right {
-  border-right-color: var(--card, #0f172a) !important;
+  border-right-color: #090d16 !important;
 }
 
 /* Popover Header Badge & Title */
 .driver-popover-title {
-  font-size: 1rem !important;
-  font-weight: 700 !important;
-  letter-spacing: -0.015em !important;
-  color: var(--foreground, #ffffff) !important;
-  margin-bottom: 0.5rem !important;
-  line-height: 1.35 !important;
   display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  gap: 0.45rem !important;
+  margin-bottom: 0.65rem !important;
+  padding-right: 2rem !important; /* ensures close button never touches or squeezes the badge/title */
+  border: none !important;
+  background: transparent !important;
+}
+
+.nexora-tour-badge-wrapper {
+  display: block !important;
+  margin-bottom: 0.1rem !important;
+}
+
+.nexora-tour-badge {
+  display: inline-flex !important;
   align-items: center !important;
-  gap: 0.5rem !important;
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
+  font-size: 0.6875rem !important; /* 11px */
+  font-weight: 700 !important;
+  letter-spacing: 0.05em !important;
+  text-transform: uppercase !important;
+  padding: 0.22rem 0.65rem !important;
+  border-radius: 9999px !important;
+  background: rgba(99, 102, 241, 0.18) !important;
+  color: #a5b4fc !important;
+  border: 1px solid rgba(99, 102, 241, 0.35) !important;
+  line-height: 1.2 !important;
+}
+
+.nexora-tour-title {
+  font-size: 1.05rem !important;
+  font-weight: 700 !important;
+  line-height: 1.35 !important;
+  letter-spacing: -0.015em !important;
+  color: #f8fafc !important;
+  margin: 0 !important;
+  word-break: normal !important;
 }
 
 /* Popover Description */
 .driver-popover-description {
-  font-size: 0.84rem !important;
+  font-size: 0.85rem !important;
   line-height: 1.55 !important;
-  color: var(--muted-foreground, #94a3b8) !important;
+  color: #94a3b8 !important;
   margin-bottom: 1.25rem !important;
 }
 
@@ -97,38 +137,42 @@
   justify-content: space-between !important;
   margin-top: 1rem !important;
   padding-top: 0.75rem !important;
-  border-top: 1px solid var(--border, rgba(255, 255, 255, 0.08)) !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
 }
 
-/* Progress Step Indicator ("2 of 7") */
+/* Progress Step Indicator ("1 of 9") */
 .driver-popover-progress-text {
   font-size: 0.75rem !important;
   font-weight: 600 !important;
-  color: var(--muted-foreground, #94a3b8) !important;
+  color: #94a3b8 !important;
   letter-spacing: 0.02em !important;
-  background: var(--muted, rgba(255, 255, 255, 0.05)) !important;
+  background: rgba(255, 255, 255, 0.05) !important;
   padding: 0.2rem 0.55rem !important;
   border-radius: 9999px !important;
-  border: 1px solid var(--border, rgba(255, 255, 255, 0.08)) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
 }
 
 /* Close (X) Button */
 .driver-popover-close-btn {
-  color: var(--muted-foreground, #94a3b8) !important;
+  color: #94a3b8 !important;
   transition: all 0.15s ease !important;
-  top: 1rem !important;
-  right: 1rem !important;
-  width: 24px !important;
-  height: 24px !important;
+  position: absolute !important;
+  top: 1.15rem !important;
+  right: 1.15rem !important;
+  width: 26px !important;
+  height: 26px !important;
   border-radius: 6px !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
+  font-size: 1.15rem !important;
+  line-height: 1 !important;
+  cursor: pointer !important;
 }
 
 .driver-popover-close-btn:hover {
-  color: var(--foreground, #ffffff) !important;
-  background-color: var(--muted, rgba(255, 255, 255, 0.1)) !important;
+  color: #ffffff !important;
+  background-color: rgba(255, 255, 255, 0.1) !important;
 }
 
 /* Navigation Buttons Container */
@@ -140,8 +184,8 @@
 /* Previous Button */
 .driver-popover-prev-btn {
   background: transparent !important;
-  color: var(--foreground, #f8fafc) !important;
-  border: 1px solid var(--border, rgba(255, 255, 255, 0.15)) !important;
+  color: #f8fafc !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
   font-size: 0.8rem !important;
   font-weight: 500 !important;
   padding: 0.35rem 0.75rem !important;
@@ -151,13 +195,13 @@
 }
 
 .driver-popover-prev-btn:hover {
-  background: var(--accent, rgba(255, 255, 255, 0.08)) !important;
+  background: rgba(255, 255, 255, 0.08) !important;
 }
 
 /* Next / Finish Button */
 .driver-popover-next-btn {
   background: var(--primary, #6366f1) !important;
-  color: var(--primary-foreground, #ffffff) !important;
+  color: #000000 !important;
   border: 1px solid transparent !important;
   font-size: 0.8rem !important;
   font-weight: 600 !important;
@@ -176,4 +220,56 @@
 
 .driver-popover-next-btn:active {
   transform: translateY(0) !important;
+}
+
+/* Light Theme Adaptations */
+html:not(.dark) .driver-popover {
+  background: #ffffff !important;
+  color: #0f172a !important;
+  border: 1px solid rgba(0, 0, 0, 0.1) !important;
+  box-shadow:
+    0 24px 48px -12px rgba(0, 0, 0, 0.15),
+    0 0 0 1px rgba(0, 0, 0, 0.05) !important;
+}
+
+html:not(.dark) .nexora-tour-badge {
+  background: rgba(99, 102, 241, 0.1) !important;
+  color: #4f46e5 !important;
+  border-color: rgba(99, 102, 241, 0.25) !important;
+}
+
+html:not(.dark) .nexora-tour-title {
+  color: #0f172a !important;
+}
+
+html:not(.dark) .driver-popover-description {
+  color: #475569 !important;
+}
+
+html:not(.dark) .driver-popover-footer {
+  border-top-color: rgba(0, 0, 0, 0.08) !important;
+}
+
+html:not(.dark) .driver-popover-prev-btn {
+  color: #0f172a !important;
+  border-color: rgba(0, 0, 0, 0.15) !important;
+}
+
+html:not(.dark) .driver-popover-prev-btn:hover {
+  background: rgba(0, 0, 0, 0.05) !important;
+}
+
+html:not(.dark) .driver-popover-progress-text {
+  color: #64748b !important;
+  background: rgba(0, 0, 0, 0.04) !important;
+  border-color: rgba(0, 0, 0, 0.08) !important;
+}
+
+html:not(.dark) .driver-popover-close-btn {
+  color: #64748b !important;
+}
+
+html:not(.dark) .driver-popover-close-btn:hover {
+  color: #0f172a !important;
+  background-color: rgba(0, 0, 0, 0.06) !important;
 }

@@ -108,7 +108,10 @@ export function MobileTourModal({
               <IconComponent className="h-5 w-5" />
             </div>
             {currentStep.badge && (
-              <Badge variant="outline" className="text-[11px] font-semibold tracking-wide">
+              <Badge
+                variant="outline"
+                className="text-[11px] font-semibold tracking-wide whitespace-nowrap shrink-0"
+              >
                 {currentStep.badge}
               </Badge>
             )}
