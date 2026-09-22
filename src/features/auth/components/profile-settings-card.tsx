@@ -19,13 +19,14 @@ import { Camera, Trash2, CheckCircle2, AlertCircle, Sparkles, Loader2 } from "lu
 import { updateProfileAction } from "../actions/update-profile";
 import type { UserProfile } from "../types";
 
-// Curated high-resolution avatar presets for quick 1-click selection
+// Curated high-resolution cartoon & illustrated avatar presets (3 male, 3 female styles)
 const AVATAR_PRESETS = [
-  "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=256&h=256&fit=crop&crop=faces",
-  "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=256&h=256&fit=crop&crop=faces",
-  "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=256&h=256&fit=crop&crop=faces",
-  "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=256&h=256&fit=crop&crop=faces",
-  "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=256&h=256&fit=crop&crop=faces",
+  "https://api.dicebear.com/7.x/avataaars/svg?seed=Oliver",
+  "https://api.dicebear.com/7.x/avataaars/svg?seed=Sophia",
+  "https://api.dicebear.com/7.x/avataaars/svg?seed=Leo",
+  "https://api.dicebear.com/7.x/avataaars/svg?seed=Maya",
+  "https://api.dicebear.com/7.x/avataaars/svg?seed=Felix",
+  "https://api.dicebear.com/7.x/avataaars/svg?seed=Zoe",
 ];
 
 interface ProfileSettingsCardProps {

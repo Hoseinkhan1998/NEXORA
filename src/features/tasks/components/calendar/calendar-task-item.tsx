@@ -13,6 +13,7 @@ interface CalendarTaskItemProps {
   workspaceSlug: string;
   assignees: WorkspaceAssignee[];
   userRole: WorkspaceRole;
+  currentUserId?: string;
 }
 
 const PRIORITY_DOT_COLORS: Record<TaskPriority, string> = {
@@ -35,21 +36,46 @@ export function CalendarTaskItem({
   workspaceSlug,
   assignees,
   userRole,
+  currentUserId,
 }: CalendarTaskItemProps) {
-  const canEdit = userRole !== "viewer";
+  const [isDragging, setIsDragging] = React.useState(false);
   const priorityDot = PRIORITY_DOT_COLORS[task.priority] || "bg-blue-500";
   const statusBorder = STATUS_BORDER_COLORS[task.status] || "border-l-slate-400";
   const isDone = task.status === "done";
 
+  // Enterprise permission check
+  const isPrivileged = userRole === "owner" || userRole === "admin";
+  const isCreator = currentUserId ? task.created_by === currentUserId : false;
+  const isAssignee = currentUserId
+    ? task.assignees?.some((a) => a.id === currentUserId) || task.assignee?.id === currentUserId
+    : false;
+  const canDrag = userRole !== "viewer" && (isPrivileged || isCreator || isAssignee);
+
   const triggerContent = (
     <div
+      draggable={canDrag}
+      onDragStart={(e) => {
+        if (!canDrag) return;
+        setIsDragging(true);
+        e.dataTransfer.setData(
+          "application/json",
+          JSON.stringify({
+            taskId: task.id,
+            taskTitle: task.title,
+            currentDueDate: task.due_date,
+          })
+        );
+        e.dataTransfer.effectAllowed = "move";
+      }}
+      onDragEnd={() => setIsDragging(false)}
       className={cn(
-        "group/item flex items-center gap-1.5 w-full text-left px-1.5 py-1 rounded text-[11px] font-medium leading-tight",
+        "group/item flex items-center gap-1.5 w-full text-left px-1.5 py-1 rounded text-[11px] font-medium leading-tight select-none",
         "bg-background/80 hover:bg-accent border border-border/60 border-l-2 shadow-2xs transition-all",
         statusBorder,
-        canEdit ? "cursor-pointer" : "cursor-default"
+        canDrag ? "cursor-grab active:cursor-grabbing hover:scale-[1.01]" : "cursor-pointer",
+        isDragging && "opacity-40 ring-1 ring-primary"
       )}
-      title={`${task.title} (${task.priority} priority - ${task.status})`}
+      title={`${task.title} (${task.priority} priority - ${task.status})${canDrag ? " • Drag to reschedule" : ""}`}
     >
       <span className={cn("h-1.5 w-1.5 rounded-full shrink-0", priorityDot)} />
       <span
@@ -63,10 +89,6 @@ export function CalendarTaskItem({
     </div>
   );
 
-  if (!canEdit) {
-    return triggerContent;
-  }
-
   return (
     <EditTaskDialog
       task={task}
@@ -75,6 +97,7 @@ export function CalendarTaskItem({
       workspaceSlug={workspaceSlug}
       assignees={assignees}
       userRole={userRole}
+      currentUserId={currentUserId}
       trigger={triggerContent}
     />
   );

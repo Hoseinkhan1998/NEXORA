@@ -13,6 +13,7 @@ interface TimelineTaskEventProps {
   workspaceSlug: string;
   assignees: WorkspaceAssignee[];
   userRole: WorkspaceRole;
+  currentUserId?: string;
 }
 
 const PRIORITY_STYLES: Record<TaskPriority, { border: string; dot: string; bg: string }> = {
@@ -51,32 +52,52 @@ export function TimelineTaskEvent({
   workspaceSlug,
   assignees,
   userRole,
+  currentUserId,
 }: TimelineTaskEventProps) {
-  const canEdit = userRole !== "viewer";
+  const [isDragging, setIsDragging] = React.useState(false);
+  const isPrivileged = userRole === "owner" || userRole === "admin";
+  const isCreator = currentUserId ? task.created_by === currentUserId : false;
+  const isAssignee = currentUserId
+    ? task.assignees?.some((a) => a.id === currentUserId) || task.assignee?.id === currentUserId
+    : false;
+  const canDrag = userRole !== "viewer" && (isPrivileged || isCreator || isAssignee);
+
   const priorityStyle = PRIORITY_STYLES[task.priority] || PRIORITY_STYLES.medium;
   const statusStyle = STATUS_INDICATOR[task.status] || STATUS_INDICATOR.todo;
 
   const eventPill = (
     <div
+      draggable={canDrag}
+      onDragStart={(e) => {
+        if (!canDrag) return;
+        setIsDragging(true);
+        e.dataTransfer.setData(
+          "application/json",
+          JSON.stringify({
+            taskId: task.id,
+            taskTitle: task.title,
+            currentDueDate: task.due_date,
+          })
+        );
+        e.dataTransfer.effectAllowed = "move";
+      }}
+      onDragEnd={() => setIsDragging(false)}
       className={cn(
-        "group/pill flex items-center gap-1.5 h-7 w-[40px] mx-auto px-1.5 rounded text-[11px] font-medium border shadow-2xs transition-all",
+        "group/pill flex items-center gap-1.5 h-7 w-[40px] mx-auto px-1.5 rounded text-[11px] font-medium border shadow-2xs transition-all select-none",
         priorityStyle.bg,
         priorityStyle.border,
         statusStyle,
-        canEdit ? "cursor-pointer hover:shadow-xs" : "cursor-default"
+        canDrag ? "cursor-grab active:cursor-grabbing hover:scale-105" : "cursor-pointer",
+        isDragging && "opacity-40 ring-1 ring-primary"
       )}
-      title={`${task.title} (Due: ${task.due_date}) - ${task.priority} priority, ${task.status}`}
+      title={`${task.title} (Due: ${task.due_date}) • ${task.priority} priority, ${task.status}${canDrag ? " • Drag to reschedule" : ""}`}
     >
-      <span className={cn("h-1.5 w-1.5 rounded-full shrink-0", priorityStyle.dot)} />
+      <span className={cn("h-1.5 w-1.5 rounded-full shrink-0", priorityDot(task.priority))} />
       <span className="truncate text-[10px] font-semibold leading-none">
         {task.status === "done" ? "✓" : "●"}
       </span>
     </div>
   );
-
-  if (!canEdit) {
-    return eventPill;
-  }
 
   return (
     <EditTaskDialog
@@ -86,7 +107,22 @@ export function TimelineTaskEvent({
       workspaceSlug={workspaceSlug}
       assignees={assignees}
       userRole={userRole}
+      currentUserId={currentUserId}
       trigger={eventPill}
     />
   );
+}
+
+function priorityDot(priority: TaskPriority) {
+  switch (priority) {
+    case "urgent":
+      return "bg-rose-500";
+    case "high":
+      return "bg-amber-500";
+    case "medium":
+      return "bg-blue-500";
+    case "low":
+    default:
+      return "bg-slate-400 dark:bg-slate-500";
+  }
 }

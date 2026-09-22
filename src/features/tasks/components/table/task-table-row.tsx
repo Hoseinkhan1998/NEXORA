@@ -18,6 +18,7 @@ interface TaskTableRowProps {
   workspaceSlug: string;
   assignees: WorkspaceAssignee[];
   userRole: WorkspaceRole;
+  currentUserId?: string;
 }
 
 function TaskTableRowInternal({
@@ -27,9 +28,8 @@ function TaskTableRowInternal({
   workspaceSlug,
   assignees,
   userRole,
+  currentUserId,
 }: TaskTableRowProps) {
-  const canEdit = userRole !== "viewer";
-
   // Check if task is overdue
   const isOverdue = React.useMemo(() => {
     if (!task.due_date || task.status === "done") return false;
@@ -51,26 +51,23 @@ function TaskTableRowInternal({
       {/* 1. Task Title & Description */}
       <TableCell className="min-w-[240px] max-w-[400px]">
         <div className="space-y-0.5">
-          {canEdit ? (
-            <EditTaskDialog
-              task={task}
-              workspaceId={workspaceId}
-              projectId={projectId}
-              workspaceSlug={workspaceSlug}
-              assignees={assignees}
-              userRole={userRole}
-              trigger={
-                <button
-                  type="button"
-                  className="text-left font-medium text-foreground hover:text-primary transition-colors line-clamp-1 cursor-pointer focus-visible:outline-none focus-visible:underline"
-                >
-                  {task.title}
-                </button>
-              }
-            />
-          ) : (
-            <span className="font-medium text-foreground line-clamp-1">{task.title}</span>
-          )}
+          <EditTaskDialog
+            task={task}
+            workspaceId={workspaceId}
+            projectId={projectId}
+            workspaceSlug={workspaceSlug}
+            assignees={assignees}
+            userRole={userRole}
+            currentUserId={currentUserId}
+            trigger={
+              <button
+                type="button"
+                className="text-left font-medium text-foreground hover:text-primary transition-colors line-clamp-1 cursor-pointer focus-visible:outline-none focus-visible:underline"
+              >
+                {task.title}
+              </button>
+            }
+          />
 
           {task.description && (
             <p className="text-xs text-muted-foreground line-clamp-1 leading-snug">
@@ -127,29 +124,27 @@ function TaskTableRowInternal({
 
       {/* 6. Actions */}
       <TableCell className="text-right whitespace-nowrap w-[70px]">
-        {canEdit ? (
-          <div className="flex items-center justify-end gap-1 opacity-80 group-hover:opacity-100 transition-opacity">
-            <EditTaskDialog
-              task={task}
-              workspaceId={workspaceId}
-              projectId={projectId}
-              workspaceSlug={workspaceSlug}
-              assignees={assignees}
-              userRole={userRole}
-              trigger={
-                <button
-                  type="button"
-                  aria-label={`Edit task ${task.title}`}
-                  className="h-7 w-7 inline-flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors focus-visible:ring-1 focus-visible:ring-ring"
-                >
-                  <MoreHorizontal className="h-4 w-4" />
-                </button>
-              }
-            />
-          </div>
-        ) : (
-          <span className="text-muted-foreground/40 text-xs">—</span>
-        )}
+        <div className="flex items-center justify-end gap-1 opacity-80 group-hover:opacity-100 transition-opacity">
+          <EditTaskDialog
+            task={task}
+            workspaceId={workspaceId}
+            projectId={projectId}
+            workspaceSlug={workspaceSlug}
+            assignees={assignees}
+            userRole={userRole}
+            currentUserId={currentUserId}
+            trigger={
+              <button
+                type="button"
+                aria-label={`View details of ${task.title}`}
+                className="h-7 w-7 inline-flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors focus-visible:ring-1 focus-visible:ring-ring"
+                title="View task details"
+              >
+                <MoreHorizontal className="h-4 w-4" />
+              </button>
+            }
+          />
+        </div>
       </TableCell>
     </TableRow>
   );

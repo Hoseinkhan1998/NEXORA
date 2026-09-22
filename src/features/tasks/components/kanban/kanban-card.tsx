@@ -4,7 +4,7 @@ import * as React from "react";
 import { TaskPriorityBadge } from "../task-priority-badge";
 import { EditTaskDialog } from "../edit-task-dialog";
 import { AssigneeAvatarStack } from "../assignee-avatar-stack";
-import { Calendar, AlertCircle, MoreHorizontal, GripVertical } from "lucide-react";
+import { Calendar, AlertCircle, GripVertical } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { TaskWithDetails, WorkspaceAssignee } from "../../types";
 import type { WorkspaceRole } from "@/features/workspaces/types";
@@ -16,6 +16,7 @@ export interface KanbanCardProps {
   workspaceSlug: string;
   assignees: WorkspaceAssignee[];
   userRole: WorkspaceRole;
+  currentUserId?: string;
   isDragging?: boolean;
   isOverlay?: boolean;
   dragHandleProps?: React.HTMLAttributes<HTMLButtonElement>;
@@ -32,6 +33,7 @@ export const KanbanCardInternal = React.forwardRef<HTMLDivElement, KanbanCardPro
       workspaceSlug,
       assignees,
       userRole,
+      currentUserId,
       isDragging,
       isOverlay,
       dragHandleProps,
@@ -40,6 +42,7 @@ export const KanbanCardInternal = React.forwardRef<HTMLDivElement, KanbanCardPro
     },
     ref
   ) {
+    const [detailOpen, setDetailOpen] = React.useState(false);
     const canEdit = userRole !== "viewer";
 
     // Check if task is overdue (due_date in the past and not marked done)
@@ -57,20 +60,40 @@ export const KanbanCardInternal = React.forwardRef<HTMLDivElement, KanbanCardPro
         })
       : null;
 
+    const handleCardClick = (e: React.MouseEvent) => {
+      if ((e.target as HTMLElement).closest("button")) {
+        return;
+      }
+      setDetailOpen(true);
+    };
+
     return (
       <div
         ref={ref}
         style={style}
+        onClick={handleCardClick}
         className={cn(
-          "group relative flex flex-col justify-between gap-3 p-3.5 rounded-lg border bg-card text-card-foreground shadow-xs transition-all",
-          "border-border/70 hover:border-border",
-          isDragging && "opacity-40 border-dashed border-primary/50 bg-primary/5",
+          "group relative flex flex-col justify-between gap-3 p-3.5 rounded-lg border bg-card text-card-foreground shadow-xs transition-all cursor-pointer",
+          "border-border/70 hover:border-primary/40 hover:shadow-md",
+          isDragging && "opacity-40 border-dashed border-primary/50 bg-primary/5 cursor-grabbing",
           isOverlay && "shadow-xl ring-2 ring-primary/30 rotate-1 cursor-grabbing z-50 bg-card",
           "focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-1",
           className
         )}
       >
-        {/* Top row: Drag Handle + Priority Badge + Quick Actions */}
+        <EditTaskDialog
+          open={detailOpen}
+          onOpenChange={setDetailOpen}
+          task={task}
+          workspaceId={workspaceId}
+          projectId={projectId}
+          workspaceSlug={workspaceSlug}
+          assignees={assignees}
+          userRole={userRole}
+          currentUserId={currentUserId}
+        />
+
+        {/* Top row: Drag Handle + Priority Badge */}
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-1.5 min-w-0">
             {/* Dedicated Drag Handle for non-viewers */}
@@ -89,33 +112,11 @@ export const KanbanCardInternal = React.forwardRef<HTMLDivElement, KanbanCardPro
             )}
             <TaskPriorityBadge priority={task.priority} />
           </div>
-
-          {canEdit && (
-            <div className="opacity-70 group-hover:opacity-100 transition-opacity shrink-0">
-              <EditTaskDialog
-                task={task}
-                workspaceId={workspaceId}
-                projectId={projectId}
-                workspaceSlug={workspaceSlug}
-                assignees={assignees}
-                userRole={userRole}
-                trigger={
-                  <button
-                    type="button"
-                    aria-label={`Edit task ${task.title}`}
-                    className="h-6 w-6 inline-flex items-center justify-center rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    <MoreHorizontal className="h-3.5 w-3.5" />
-                  </button>
-                }
-              />
-            </div>
-          )}
         </div>
 
         {/* Task Title & Description */}
         <div className="space-y-1 min-w-0">
-          <h4 className="text-sm font-medium tracking-tight text-foreground leading-snug break-words">
+          <h4 className="text-sm font-medium tracking-tight text-foreground leading-snug break-words group-hover:text-primary transition-colors">
             {task.title}
           </h4>
           {task.description && (

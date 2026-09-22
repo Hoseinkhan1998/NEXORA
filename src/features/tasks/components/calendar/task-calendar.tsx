@@ -24,6 +24,7 @@ interface TaskCalendarProps {
   workspaceSlug: string;
   assignees: WorkspaceAssignee[];
   userRole: WorkspaceRole;
+  currentUserId?: string;
 }
 
 export function TaskCalendar({
@@ -33,6 +34,7 @@ export function TaskCalendar({
   workspaceSlug,
   assignees,
   userRole,
+  currentUserId,
 }: TaskCalendarProps) {
   const [currentDate, setCurrentDate] = React.useState<Date>(() => new Date());
   const [filters, setFilters] = React.useState<TaskTableFilters>(DEFAULT_TASK_FILTERS);
@@ -170,6 +172,7 @@ export function TaskCalendar({
                     workspaceSlug={workspaceSlug}
                     assignees={assignees}
                     userRole={userRole}
+                    currentUserId={currentUserId}
                   />
                 );
               })}

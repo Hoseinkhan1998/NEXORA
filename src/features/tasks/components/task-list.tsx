@@ -18,6 +18,7 @@ interface TaskListProps {
   workspaceSlug: string;
   assignees: WorkspaceAssignee[];
   userRole: WorkspaceRole;
+  currentUserId?: string;
 }
 
 export function TaskList({
@@ -27,6 +28,7 @@ export function TaskList({
   workspaceSlug,
   assignees,
   userRole,
+  currentUserId,
 }: TaskListProps) {
   const [searchQuery, setSearchQuery] = React.useState("");
   const [activeTab, setActiveTab] = React.useState("all");
@@ -165,6 +167,17 @@ export function TaskList({
             />
           ) : (
             <div className="space-y-2">
+              <div className="hidden md:flex items-center justify-between px-3.5 py-1 text-[11px] font-medium text-muted-foreground/60 select-none">
+                <div className="flex items-center gap-3 flex-1 min-w-0">
+                  <span className="w-[105px] text-center shrink-0">Status</span>
+                  <span className="flex-1 pl-1">Task</span>
+                </div>
+                <div className="flex items-center gap-4 shrink-0">
+                  <span className="w-[74px] text-center shrink-0">Priority</span>
+                  <span className="w-[100px] text-left shrink-0">Due Date</span>
+                  <span className="w-[140px] text-right shrink-0">Assignees</span>
+                </div>
+              </div>
               {filteredTasks.map((task) => (
                 <TaskItem
                   key={task.id}
@@ -174,6 +187,7 @@ export function TaskList({
                   workspaceSlug={workspaceSlug}
                   assignees={assignees}
                   userRole={userRole}
+                  currentUserId={currentUserId}
                 />
               ))}
             </div>

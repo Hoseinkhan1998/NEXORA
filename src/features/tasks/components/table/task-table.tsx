@@ -24,6 +24,7 @@ interface TaskTableProps {
   workspaceSlug: string;
   assignees: WorkspaceAssignee[];
   userRole: WorkspaceRole;
+  currentUserId?: string;
 }
 
 interface ColumnHeaderProps {
@@ -64,6 +65,7 @@ export function TaskTable({
   workspaceSlug,
   assignees,
   userRole,
+  currentUserId,
 }: TaskTableProps) {
   const [filters, setFilters] = React.useState<TaskTableFilters>(DEFAULT_TASK_FILTERS);
   const [sortConfig, setSortConfig] = React.useState<SortConfig | null>(null);
@@ -174,6 +176,7 @@ export function TaskTable({
                   workspaceSlug={workspaceSlug}
                   assignees={assignees}
                   userRole={userRole}
+                  currentUserId={currentUserId}
                 />
               ))}
             </TableBody>

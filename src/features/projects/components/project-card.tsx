@@ -33,28 +33,27 @@ export function ProjectCard({ project, workspaceSlug }: ProjectCardProps) {
     project.creator?.full_name || project.creator?.email?.split("@")[0] || "Team Member";
 
   return (
-    <Card
-      className={`group flex flex-col justify-between transition-all duration-200 hover:shadow-md border-border/80 ${
-        isArchived ? "opacity-75 bg-muted/20" : "bg-card hover:border-border"
-      }`}
+    <Link
+      href={`/app/${workspaceSlug}/projects/${project.id}`}
+      className="block h-full group/card outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-xl transition-all"
     >
-      <CardHeader className="pb-3">
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <span
-              className="h-3.5 w-3.5 shrink-0 rounded-full shadow-xs"
-              style={{ backgroundColor: projectColor }}
-              aria-hidden="true"
-            />
-            <CardTitle className="text-base font-semibold truncate leading-tight group-hover:text-primary transition-colors">
-              <Link
-                href={`/app/${workspaceSlug}/projects/${project.id}`}
-                className="outline-none focus-visible:underline"
-              >
+      <Card
+        className={`h-full flex flex-col justify-between transition-all duration-200 hover:shadow-md cursor-pointer border-border/80 group-hover/card:border-primary/40 ${
+          isArchived ? "opacity-75 bg-muted/20" : "bg-card hover:bg-accent/10"
+        }`}
+      >
+        <CardHeader className="pb-3">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <span
+                className="h-3.5 w-3.5 shrink-0 rounded-full shadow-xs"
+                style={{ backgroundColor: projectColor }}
+                aria-hidden="true"
+              />
+              <CardTitle className="text-base font-semibold truncate leading-tight group-hover/card:text-primary transition-colors">
                 {project.name}
-              </Link>
-            </CardTitle>
-          </div>
+              </CardTitle>
+            </div>
 
           <Badge
             variant={isArchived ? "secondary" : "outline"}
@@ -97,5 +96,6 @@ export function ProjectCard({ project, workspaceSlug }: ProjectCardProps) {
         </div>
       </CardFooter>
     </Card>
+  </Link>
   );
 }

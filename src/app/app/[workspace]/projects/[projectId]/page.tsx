@@ -14,6 +14,7 @@ import { ProjectPresence, ActivitySheet, ActivityFeed } from "@/features/collabo
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Calendar, Clock, User, FolderKanban, ShieldCheck, History } from "lucide-react";
+import { DynamicBreadcrumbSetter } from "@/components/layout/app-shell/breadcrumb-context";
 
 interface ProjectDetailPageProps {
   params: Promise<{ workspace: string; projectId: string }>;
@@ -90,6 +91,8 @@ export default async function ProjectDetailPage({ params, searchParams }: Projec
 
   return (
     <div className="space-y-6">
+      <DynamicBreadcrumbSetter segment={project.id} label={project.name} />
+
       {/* Back link */}
       <div>
         <Link
@@ -156,19 +159,19 @@ export default async function ProjectDetailPage({ params, searchParams }: Projec
         </div>
       </div>
 
-      {/* Project Metadata Grid */}
+      {/* 1. Project Metadata Top Row */}
       <div className="grid gap-6 md:grid-cols-3">
         {/* Left Column (2 cols): Overview & Description */}
-        <div className="md:col-span-2 space-y-6">
-          <Card className="shadow-xs">
+        <div className="md:col-span-2">
+          <Card className="shadow-xs h-full flex flex-col justify-between">
             <CardHeader className="pb-3">
               <CardTitle className="text-base font-semibold">Project Overview</CardTitle>
               <CardDescription className="text-xs">
                 Key objective and scope for this initiative.
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4 text-sm">
-              <div className="rounded-lg bg-muted/30 border border-border/40 p-4">
+            <CardContent className="space-y-4 text-sm flex-1 flex flex-col justify-between">
+              <div className="rounded-lg bg-muted/30 border border-border/40 p-4 flex-1">
                 <p className="text-sm leading-relaxed text-foreground whitespace-pre-wrap">
                   {project.description || (
                     <span className="text-muted-foreground italic">
@@ -178,7 +181,7 @@ export default async function ProjectDetailPage({ params, searchParams }: Projec
                 </p>
               </div>
 
-              <div className="grid grid-cols-2 gap-4 pt-2 text-xs">
+              <div className="grid grid-cols-2 gap-4 pt-2 text-xs border-t border-border/30">
                 <div className="space-y-1">
                   <span className="text-muted-foreground">Workspace</span>
                   <p className="font-semibold text-foreground truncate">{workspace.name}</p>
@@ -200,9 +203,9 @@ export default async function ProjectDetailPage({ params, searchParams }: Projec
           </Card>
         </div>
 
-        {/* Right Column (1 col): Metadata & Live Activity Feed */}
-        <div className="space-y-6">
-          <Card className="shadow-xs">
+        {/* Right Column (1 col): Metadata & Tenant Scoping */}
+        <div className="md:col-span-1">
+          <Card className="shadow-xs h-full flex flex-col justify-between">
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-semibold">Initiative Metadata</CardTitle>
             </CardHeader>
@@ -236,6 +239,16 @@ export default async function ProjectDetailPage({ params, searchParams }: Projec
                 <span className="font-medium text-foreground">{updatedDateFormatted}</span>
               </div>
 
+              <div className="flex items-center justify-between py-1 border-b border-border/40">
+                <span className="text-muted-foreground flex items-center gap-1.5">
+                  <FolderKanban className="h-3.5 w-3.5 text-muted-foreground" />
+                  Tenant Scoping
+                </span>
+                <span className="font-mono text-[11px] text-foreground font-semibold">
+                  /{workspace.slug}
+                </span>
+              </div>
+
               <div className="flex items-center justify-between py-1">
                 <span className="text-muted-foreground flex items-center gap-1.5">
                   <ShieldCheck className="h-3.5 w-3.5 text-emerald-500" />
@@ -245,46 +258,10 @@ export default async function ProjectDetailPage({ params, searchParams }: Projec
               </div>
             </CardContent>
           </Card>
-
-          {/* Embedded Project Activity Stream */}
-          <Card className="shadow-xs">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-xs font-semibold flex items-center justify-between">
-                <span className="flex items-center gap-1.5">
-                  <History className="h-3.5 w-3.5 text-muted-foreground" />
-                  Recent Activity
-                </span>
-                <span className="text-[10px] text-muted-foreground font-normal font-mono">
-                  Live Stream
-                </span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="pt-0">
-              <div className="max-h-[300px] overflow-y-auto scrollbar-thin pr-1">
-                <ActivityFeed projectId={project.id} initialActivities={initialActivities} />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="shadow-xs bg-muted/20">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-xs font-semibold flex items-center gap-1.5">
-                <FolderKanban className="h-3.5 w-3.5 text-muted-foreground" />
-                <span>Tenant Scoping</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2 text-[11px] text-muted-foreground">
-              <p>
-                This project is strictly bound to workspace{" "}
-                <span className="font-semibold text-foreground">{workspace.slug}</span>. Members
-                outside this workspace cannot view or modify it.
-              </p>
-            </CardContent>
-          </Card>
         </div>
       </div>
 
-      {/* Project Views Section (List, Kanban, Table, Calendar, Timeline) */}
+      {/* 2. Project Views Section (List, Kanban, Table, Calendar, Timeline) */}
       <div className="pt-2">
         <ProjectViewContent
           initialView={initialView}
@@ -294,8 +271,32 @@ export default async function ProjectDetailPage({ params, searchParams }: Projec
           workspaceSlug={workspace.slug}
           assignees={assignees}
           userRole={workspace.role}
+          currentUserId={user?.id}
         />
       </div>
+
+      {/* 3. Full-Width Embedded Project Activity Audit Log */}
+      <Card className="shadow-xs">
+        <CardHeader className="pb-3 border-b border-border/40">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-sm font-semibold flex items-center gap-2">
+              <History className="h-4 w-4 text-primary" />
+              <span>Recent Project Activity</span>
+            </CardTitle>
+            <Badge variant="outline" className="text-[10px] font-mono text-muted-foreground">
+              Live Stream
+            </Badge>
+          </div>
+          <CardDescription className="text-xs">
+            Real-time audit stream of task transitions, reassignments, and team updates.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="pt-4">
+          <div className="max-h-[300px] overflow-y-auto scrollbar-thin pr-1">
+            <ActivityFeed projectId={project.id} initialActivities={initialActivities} />
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

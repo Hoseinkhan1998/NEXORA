@@ -19,6 +19,7 @@ export function SortableKanbanCard({
   workspaceSlug,
   assignees,
   userRole,
+  currentUserId,
   disabled,
 }: SortableKanbanCardProps) {
   const isViewer = userRole === "viewer";
@@ -48,6 +49,7 @@ export function SortableKanbanCard({
       workspaceSlug={workspaceSlug}
       assignees={assignees}
       userRole={userRole}
+      currentUserId={currentUserId}
       isDragging={isDragging}
       dragHandleProps={!isDisabled ? { ...attributes, ...listeners } : undefined}
       style={style}

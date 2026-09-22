@@ -1,7 +1,10 @@
 "use client";
 
 import * as React from "react";
+import { useRouter } from "next/navigation";
 import { CalendarTaskItem } from "./calendar-task-item";
+import { updateTaskDueDateAction } from "../../actions/update-task-due-date";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import type { CalendarDay } from "../../lib/calendar";
 import type { TaskWithDetails, WorkspaceAssignee } from "../../types";
@@ -15,6 +18,7 @@ interface CalendarDayCellProps {
   workspaceSlug: string;
   assignees: WorkspaceAssignee[];
   userRole: WorkspaceRole;
+  currentUserId?: string;
 }
 
 export function CalendarDayCell({
@@ -25,20 +29,77 @@ export function CalendarDayCell({
   workspaceSlug,
   assignees,
   userRole,
+  currentUserId,
 }: CalendarDayCellProps) {
+  const router = useRouter();
+  const [isDragOver, setIsDragOver] = React.useState(false);
+
   const isCurrentMonth = day.isCurrentMonth;
   const isToday = day.isToday;
+  const canDrop = userRole !== "viewer";
+
+  const handleDragOver = (e: React.DragEvent) => {
+    if (!canDrop) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    if (!isDragOver) {
+      setIsDragOver(true);
+    }
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    if (e.currentTarget.contains(e.relatedTarget as Node)) return;
+    setIsDragOver(false);
+  };
+
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+    if (!canDrop) return;
+
+    try {
+      const dataStr = e.dataTransfer.getData("application/json");
+      if (!dataStr) return;
+      const data = JSON.parse(dataStr);
+      if (!data.taskId) return;
+
+      if (data.currentDueDate === day.dateKey) {
+        return;
+      }
+
+      const res = await updateTaskDueDateAction(
+        data.taskId,
+        workspaceId,
+        projectId,
+        workspaceSlug,
+        day.dateKey
+      );
+
+      if (res.success) {
+        toast.success(`Rescheduled "${data.taskTitle || "Task"}" to ${day.dateKey}`);
+        router.refresh();
+      } else {
+        toast.error(res.error || "Failed to reschedule task.");
+      }
+    } catch (err) {
+      console.error("[CalendarDayCell] Drop error:", err);
+    }
+  };
 
   return (
     <div
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
       className={cn(
         "flex flex-col min-h-[105px] sm:min-h-[125px] p-1.5 border-b border-r border-border/60 transition-colors",
         isCurrentMonth ? "bg-card" : "bg-muted/25 text-muted-foreground/50",
-        isToday && "bg-primary/5"
+        isToday && "bg-primary/5",
+        isDragOver && "ring-2 ring-primary ring-inset bg-primary/10 shadow-xs"
       )}
     >
       {/* Day header: Day number */}
-      <div className="flex items-center justify-between mb-1 px-1">
+      <div className="flex items-center justify-between mb-1 px-1 pointer-events-none">
         <span
           className={cn(
             "inline-flex items-center justify-center text-xs font-medium rounded-full h-5 w-5",
@@ -68,6 +129,7 @@ export function CalendarDayCell({
             workspaceSlug={workspaceSlug}
             assignees={assignees}
             userRole={userRole}
+            currentUserId={currentUserId}
           />
         ))}
       </div>

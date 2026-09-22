@@ -18,6 +18,7 @@ interface KanbanColumnProps {
   workspaceSlug: string;
   assignees: WorkspaceAssignee[];
   userRole: WorkspaceRole;
+  currentUserId?: string;
 }
 
 const STATUS_CONFIGS: Record<
@@ -50,6 +51,7 @@ export function KanbanColumn({
   workspaceSlug,
   assignees,
   userRole,
+  currentUserId,
 }: KanbanColumnProps) {
   const config = STATUS_CONFIGS[status];
   const isViewer = userRole === "viewer";
@@ -101,6 +103,7 @@ export function KanbanColumn({
                 workspaceSlug={workspaceSlug}
                 assignees={assignees}
                 userRole={userRole}
+                currentUserId={currentUserId}
               />
             ))
           )}

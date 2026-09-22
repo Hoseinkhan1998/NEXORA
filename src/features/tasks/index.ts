@@ -5,6 +5,7 @@ export * from "./actions/create-task";
 export * from "./actions/update-task";
 export * from "./actions/delete-task";
 export * from "./actions/move-task";
+export * from "./actions/update-task-due-date";
 export * from "./lib/position";
 export * from "./lib/table-sort";
 export * from "./lib/table-filter";

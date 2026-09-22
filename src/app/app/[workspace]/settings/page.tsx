@@ -7,9 +7,8 @@ import {
   getWorkspaceMembers,
   getWorkspaceInvitations,
   MembersCard,
+  WorkspaceConfigCard,
 } from "@/features/workspaces";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Settings } from "lucide-react";
 
 interface SettingsPageProps {
@@ -55,7 +54,8 @@ export default async function SettingsPage({ params }: SettingsPageProps) {
         </p>
       </div>
 
-      <div className="grid gap-8">
+      <div className="space-y-8">
+        {/* Full-Width Members Card */}
         <MembersCard
           members={members}
           invitations={invitations}
@@ -65,41 +65,17 @@ export default async function SettingsPage({ params }: SettingsPageProps) {
           workspaceSlug={currentWorkspace.slug}
         />
 
-        <ProfileSettingsCard initialProfile={profile} />
+        {/* Side-by-Side: Profile Settings & Workspace Configuration */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+          <ProfileSettingsCard initialProfile={profile} />
 
-        <Card className="shadow-xs max-w-2xl">
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-base font-semibold">Workspace Configuration</CardTitle>
-              <Badge variant="outline" className="font-mono text-[10px]">
-                Multi-Tenancy Active
-              </Badge>
-            </div>
-            <CardDescription>Workspace metadata and tenant isolation verification.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3 text-sm">
-            <div className="flex items-center justify-between py-1.5 border-b border-border/40 text-xs">
-              <span className="text-muted-foreground">Workspace Name</span>
-              <span className="font-medium text-foreground">{currentWorkspace.name}</span>
-            </div>
-            <div className="flex items-center justify-between py-1.5 border-b border-border/40 text-xs">
-              <span className="text-muted-foreground">Active Slug</span>
-              <span className="font-mono font-medium">{currentWorkspace.slug}</span>
-            </div>
-            <div className="flex items-center justify-between py-1.5 border-b border-border/40 text-xs">
-              <span className="text-muted-foreground">Your Role</span>
-              <Badge variant="secondary" className="capitalize text-[11px] font-medium">
-                {currentWorkspace.role}
-              </Badge>
-            </div>
-            <div className="flex items-center justify-between py-1.5 text-xs">
-              <span className="text-muted-foreground">Tenant Access</span>
-              <span className="text-emerald-600 dark:text-emerald-400 font-medium">
-                Cryptographically Isolated & Verified
-              </span>
-            </div>
-          </CardContent>
-        </Card>
+          <WorkspaceConfigCard
+            workspaceId={currentWorkspace.id}
+            workspaceName={currentWorkspace.name}
+            workspaceSlug={currentWorkspace.slug}
+            currentUserRole={currentWorkspace.role}
+          />
+        </div>
       </div>
     </div>
   );

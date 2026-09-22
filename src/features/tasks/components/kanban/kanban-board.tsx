@@ -29,6 +29,7 @@ interface KanbanBoardProps {
   workspaceSlug: string;
   assignees: WorkspaceAssignee[];
   userRole: WorkspaceRole;
+  currentUserId?: string;
 }
 
 const ALL_STATUSES: readonly TaskStatus[] = ["todo", "in_progress", "done"] as const;
@@ -56,6 +57,7 @@ export function KanbanBoard({
   workspaceSlug,
   assignees,
   userRole,
+  currentUserId,
 }: KanbanBoardProps) {
   const isViewer = userRole === "viewer";
 
@@ -304,6 +306,7 @@ export function KanbanBoard({
               workspaceSlug={workspaceSlug}
               assignees={assignees}
               userRole={userRole}
+              currentUserId={currentUserId}
             />
           </div>
 
@@ -317,6 +320,7 @@ export function KanbanBoard({
               workspaceSlug={workspaceSlug}
               assignees={assignees}
               userRole={userRole}
+              currentUserId={currentUserId}
             />
           </div>
 
@@ -330,6 +334,7 @@ export function KanbanBoard({
               workspaceSlug={workspaceSlug}
               assignees={assignees}
               userRole={userRole}
+              currentUserId={currentUserId}
             />
           </div>
         </div>
@@ -344,6 +349,7 @@ export function KanbanBoard({
               workspaceSlug={workspaceSlug}
               assignees={assignees}
               userRole={userRole}
+              currentUserId={currentUserId}
               isOverlay
             />
           ) : null}

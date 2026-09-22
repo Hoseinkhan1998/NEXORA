@@ -18,3 +18,13 @@ export const createWorkspaceSchema = z.object({
 });
 
 export type CreateWorkspaceSchemaInput = z.infer<typeof createWorkspaceSchema>;
+
+export const updateWorkspaceSchema = z.object({
+  name: z
+    .string()
+    .trim()
+    .min(2, { message: "Workspace name must be at least 2 characters" })
+    .max(50, { message: "Workspace name must be 50 characters or fewer" }),
+});
+
+export type UpdateWorkspaceSchemaInput = z.infer<typeof updateWorkspaceSchema>;

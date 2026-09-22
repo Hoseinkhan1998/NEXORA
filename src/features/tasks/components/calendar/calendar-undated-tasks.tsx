@@ -59,10 +59,24 @@ export function CalendarUndatedTasks({
           {tasks.map((task) => {
             const trigger = (
               <div
+                draggable={canEdit}
+                onDragStart={(e) => {
+                  if (!canEdit) return;
+                  e.dataTransfer.setData(
+                    "application/json",
+                    JSON.stringify({
+                      taskId: task.id,
+                      taskTitle: task.title,
+                      currentDueDate: null,
+                    })
+                  );
+                  e.dataTransfer.effectAllowed = "move";
+                }}
                 className={cn(
-                  "flex items-center justify-between gap-2 p-2 rounded-md border border-border/60 bg-card hover:bg-accent transition-all text-xs",
-                  canEdit ? "cursor-pointer" : "cursor-default"
+                  "flex items-center justify-between gap-2 p-2 rounded-md border border-border/60 bg-card hover:bg-accent transition-all text-xs select-none",
+                  canEdit ? "cursor-grab active:cursor-grabbing hover:scale-[1.01]" : "cursor-default"
                 )}
+                title={`${task.title}${canEdit ? " • Drag onto calendar day to schedule" : ""}`}
               >
                 <span className="truncate font-medium text-foreground">{task.title}</span>
                 <div className="shrink-0">

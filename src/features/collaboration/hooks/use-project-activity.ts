@@ -23,9 +23,10 @@ export function useProjectActivity({ projectId, initialActivities }: UseProjectA
     if (!projectId) return;
 
     const supabase = createClient();
+    const channelName = `project:${projectId}:activity:${Math.random().toString(36).slice(2, 8)}`;
 
     const channel = supabase
-      .channel(`project:${projectId}:activity`)
+      .channel(channelName)
       .on(
         "postgres_changes",
         {

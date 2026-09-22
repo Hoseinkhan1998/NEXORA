@@ -6,14 +6,19 @@ import { usePathname } from "next/navigation";
 import { ChevronRight, Home } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+import { useBreadcrumbs } from "./breadcrumb-context";
+
 interface BreadcrumbItem {
   label: string;
   href: string;
   isCurrent: boolean;
 }
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export function Breadcrumbs({ className }: { className?: string }) {
   const pathname = usePathname();
+  const { customLabels } = useBreadcrumbs();
 
   const items: BreadcrumbItem[] = React.useMemo(() => {
     // Standardize root /app path
@@ -40,12 +45,19 @@ export function Breadcrumbs({ className }: { className?: string }) {
       currentHref += `/${segment}`;
       const isCurrent = i === segments.length - 1;
 
-      // Map common segment names to friendly labels
+      // Map common segment names or custom labels
       let label = segment;
-      if (segment === "projects") label = "Projects";
-      else if (segment === "analytics") label = "Analytics";
-      else if (segment === "settings") label = "Settings";
-      else {
+      if (customLabels[segment]) {
+        label = customLabels[segment];
+      } else if (segment === "projects") {
+        label = "Projects";
+      } else if (segment === "analytics") {
+        label = "Analytics";
+      } else if (segment === "settings") {
+        label = "Settings";
+      } else if (UUID_REGEX.test(segment)) {
+        label = "Project";
+      } else {
         // Capitalize words
         label = segment.charAt(0).toUpperCase() + segment.slice(1).replace(/-/g, " ");
       }
@@ -58,7 +70,7 @@ export function Breadcrumbs({ className }: { className?: string }) {
     }
 
     return crumbs;
-  }, [pathname]);
+  }, [pathname, customLabels]);
 
   return (
     <nav aria-label="Breadcrumb" className={cn("flex items-center", className)}>
