@@ -47,9 +47,9 @@ export default async function WorkspacePage({ params }: WorkspacePageProps) {
     notFound();
   }
 
-  // Fetch workspace projects, members, and task stats in parallel
+  // Fetch workspace active projects, members, and task stats in parallel
   const [projects, supabase, workspaceMembers] = await Promise.all([
-    getWorkspaceProjects(workspace.id),
+    getWorkspaceProjects(workspace.id, "active"),
     createClient(),
     getWorkspaceAssignees(workspace.id),
   ]);
