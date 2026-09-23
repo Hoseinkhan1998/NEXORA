@@ -56,6 +56,7 @@ export function Sidebar({
       <div className="flex h-16 items-center px-6 border-b border-border/60">
         <Link
           href={brandHref}
+          prefetch={true}
           onClick={onNavigate}
           className="flex items-center gap-2 font-bold tracking-tight text-lg text-foreground hover:opacity-90 transition-opacity"
         >
@@ -97,6 +98,7 @@ export function Sidebar({
                   key={item.href}
                   id={tourId}
                   href={item.href}
+                  prefetch={true}
                   onClick={onNavigate}
                   aria-current={active ? "page" : undefined}
                   className={cn(
@@ -164,6 +166,7 @@ export function Sidebar({
                   key={item.href}
                   id={tourId}
                   href={item.href}
+                  prefetch={true}
                   onClick={onNavigate}
                   aria-current={active ? "page" : undefined}
                   className={cn(

@@ -1,11 +1,13 @@
+import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import type { ProjectStatus, ProjectWithCreator } from "../types";
 
 /**
  * Retrieves all projects for a specific workspace, optionally filtered by status.
  * Enforced by PostgreSQL RLS (caller must be a workspace member).
+ * Cached per-request using React cache.
  */
-export async function getWorkspaceProjects(
+export const getWorkspaceProjects = cache(async function getWorkspaceProjects(
   workspaceId: string,
   status?: ProjectStatus
 ): Promise<ProjectWithCreator[]> {
@@ -76,13 +78,14 @@ export async function getWorkspaceProjects(
         : null,
     };
   });
-}
+});
 
 /**
  * Securely resolves a project by ID, verifying that it belongs to the specified workspace.
  * Returns null if not found or if caller lacks membership.
+ * Cached per-request using React cache.
  */
-export async function getProjectById(
+export const getProjectById = cache(async function getProjectById(
   projectId: string,
   workspaceId: string
 ): Promise<ProjectWithCreator | null> {
@@ -147,4 +150,4 @@ export async function getProjectById(
         }
       : null,
   };
-}
+});

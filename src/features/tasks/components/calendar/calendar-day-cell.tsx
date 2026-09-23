@@ -19,6 +19,7 @@ interface CalendarDayCellProps {
   assignees: WorkspaceAssignee[];
   userRole: WorkspaceRole;
   currentUserId?: string;
+  onUpdateDueDate?: (taskId: string, newDueDate: string | null) => Promise<void> | void;
 }
 
 export function CalendarDayCell({
@@ -30,6 +31,7 @@ export function CalendarDayCell({
   assignees,
   userRole,
   currentUserId,
+  onUpdateDueDate,
 }: CalendarDayCellProps) {
   const router = useRouter();
   const [isDragOver, setIsDragOver] = React.useState(false);
@@ -67,19 +69,23 @@ export function CalendarDayCell({
         return;
       }
 
-      const res = await updateTaskDueDateAction(
-        data.taskId,
-        workspaceId,
-        projectId,
-        workspaceSlug,
-        day.dateKey
-      );
-
-      if (res.success) {
-        toast.success(`Rescheduled "${data.taskTitle || "Task"}" to ${day.dateKey}`);
-        router.refresh();
+      if (onUpdateDueDate) {
+        await onUpdateDueDate(data.taskId, day.dateKey);
       } else {
-        toast.error(res.error || "Failed to reschedule task.");
+        const res = await updateTaskDueDateAction(
+          data.taskId,
+          workspaceId,
+          projectId,
+          workspaceSlug,
+          day.dateKey
+        );
+
+        if (res.success) {
+          toast.success(`Rescheduled "${data.taskTitle || "Task"}" to ${day.dateKey}`);
+          router.refresh();
+        } else {
+          toast.error(res.error || "Failed to reschedule task.");
+        }
       }
     } catch (err) {
       console.error("[CalendarDayCell] Drop error:", err);

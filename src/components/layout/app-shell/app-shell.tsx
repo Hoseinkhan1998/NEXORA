@@ -6,7 +6,6 @@ import { Sidebar } from "./sidebar";
 import { Topbar } from "./topbar";
 import { ProductTourProvider } from "@/features/tour";
 import { BreadcrumbProvider } from "./breadcrumb-context";
-import { WorkspaceSlugSync } from "./workspace-slug-sync";
 import { generateSlug } from "@/features/workspaces/utils/slug";
 
 interface AppShellProps {
@@ -38,8 +37,6 @@ export function AppShell({
     return labels;
   }, [currentWorkspace, workspaces]);
 
-  const expectedSlug = currentWorkspace ? generateSlug(currentWorkspace.name) : undefined;
-
   return (
     <ProductTourProvider
       workspaceId={currentWorkspace?.id}
@@ -47,12 +44,6 @@ export function AppShell({
       role={currentWorkspace?.role}
     >
       <BreadcrumbProvider initialLabels={initialLabels}>
-        {currentWorkspace && (
-          <WorkspaceSlugSync
-            currentSlug={currentWorkspace.slug}
-            expectedSlug={expectedSlug}
-          />
-        )}
         <div className="flex min-h-screen w-full bg-background text-foreground">
           {/* Desktop Sidebar */}
           <div className="hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0 z-40">

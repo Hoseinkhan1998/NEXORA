@@ -97,6 +97,7 @@ export function Breadcrumbs({ className }: { className?: string }) {
                 ) : (
                   <Link
                     href={item.href}
+                    prefetch={true}
                     className="hover:text-foreground transition-colors truncate max-w-[120px] flex items-center gap-1"
                   >
                     {isFirst && <Home className="h-3 w-3" aria-hidden="true" />}

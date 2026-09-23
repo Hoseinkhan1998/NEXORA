@@ -1,7 +1,8 @@
+import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import type { CurrentUserSession, UserProfile } from "../types";
 
-export async function getCurrentUser(): Promise<CurrentUserSession> {
+export const getCurrentUser = cache(async function getCurrentUser(): Promise<CurrentUserSession> {
   const supabase = await createClient();
 
   const {
@@ -110,4 +111,4 @@ export async function getCurrentUser(): Promise<CurrentUserSession> {
     profile,
     isAuthenticated: true,
   };
-}
+});

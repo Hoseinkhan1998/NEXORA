@@ -1,11 +1,13 @@
+import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import type { WorkspaceRole, WorkspaceWithRole, WorkspaceMember } from "../types";
 
 /**
  * Retrieves all workspaces that the current authenticated user belongs to.
  * Enforced by RLS on workspace_members and workspaces.
+ * Cached per-request using React cache.
  */
-export async function getUserWorkspaces(): Promise<WorkspaceWithRole[]> {
+export const getUserWorkspaces = cache(async function getUserWorkspaces(): Promise<WorkspaceWithRole[]> {
   const supabase = await createClient();
   const {
     data: { user },
@@ -54,13 +56,16 @@ export async function getUserWorkspaces(): Promise<WorkspaceWithRole[]> {
       };
     })
     .filter((ws): ws is WorkspaceWithRole => ws !== null);
-}
+});
 
 /**
  * Resolves a workspace by its unique slug and verifies the current user's membership.
  * Returns null if the workspace doesn't exist or the user is not a member.
+ * Cached per-request using React cache.
  */
-export async function getWorkspaceBySlug(slug: string): Promise<WorkspaceWithRole | null> {
+export const getWorkspaceBySlug = cache(async function getWorkspaceBySlug(
+  slug: string
+): Promise<WorkspaceWithRole | null> {
   const supabase = await createClient();
   const {
     data: { user },
@@ -102,12 +107,13 @@ export async function getWorkspaceBySlug(slug: string): Promise<WorkspaceWithRol
     created_at: workspace.created_at,
     updated_at: workspace.updated_at,
   };
-}
+});
 
 /**
  * Gets a user's membership for a specific workspace.
+ * Cached per-request using React cache.
  */
-export async function getWorkspaceMembership(
+export const getWorkspaceMembership = cache(async function getWorkspaceMembership(
   workspaceId: string,
   userId: string
 ): Promise<WorkspaceMember | null> {
@@ -128,4 +134,4 @@ export async function getWorkspaceMembership(
     ...data,
     role: data.role as WorkspaceRole,
   };
-}
+});

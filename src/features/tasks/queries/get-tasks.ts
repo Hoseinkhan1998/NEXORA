@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import type {
   TaskWithDetails,
@@ -143,7 +144,7 @@ function mapTaskRow(item: any): TaskWithDetails {
  * Retrieves all tasks for a specific project within a workspace.
  * Enforced by PostgreSQL RLS (caller must be a workspace member).
  */
-export async function getProjectTasks(
+export const getProjectTasks = cache(async function getProjectTasks(
   projectId: string,
   workspaceId: string
 ): Promise<TaskWithDetails[]> {
@@ -184,7 +185,7 @@ export async function getProjectTasks(
   }
 
   return data.map(mapTaskRow);
-}
+});
 
 /**
  * Retrieves a single task by ID, securely scoped to project and workspace.

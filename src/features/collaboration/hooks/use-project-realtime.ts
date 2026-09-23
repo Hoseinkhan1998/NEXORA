@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { TaskWithDetails, WorkspaceAssignee } from "@/features/tasks/types";
 import type { RealtimeConnectionStatus } from "../types";
@@ -19,6 +19,11 @@ export function useProjectRealtime({
   const [tasks, setTasks] = useState<TaskWithDetails[]>(initialTasks);
   const [connectionStatus, setConnectionStatus] = useState<RealtimeConnectionStatus>("connecting");
 
+  // Track active optimistic mutations to prevent premature server revalidations from reverting local UI
+  const optimisticLocksRef = useRef<Map<string, { dueDate?: string | null; status?: string; timestamp: number }>>(
+    new Map()
+  );
+
   // Keep a map of assignees for quick synchronous lookup on realtime events
   const assigneeMap = useMemo(() => {
     const map = new Map<string, WorkspaceAssignee>();
@@ -28,12 +33,55 @@ export function useProjectRealtime({
     return map;
   }, [assignees]);
 
-  // Synchronize state when initialTasks prop updates from server revalidation
+  // Synchronize state when initialTasks prop updates from server revalidation,
+  // but intelligently merge and protect any active optimistic state from bouncing back!
   const [prevInitialTasks, setPrevInitialTasks] = useState(initialTasks);
   if (prevInitialTasks !== initialTasks) {
     setPrevInitialTasks(initialTasks);
-    setTasks(initialTasks);
+    setTasks(() => {
+      const now = Date.now();
+      return initialTasks.map((serverTask) => {
+        const lock = optimisticLocksRef.current.get(serverTask.id);
+        if (lock) {
+          // If server data has caught up, clear lock
+          if (
+            (lock.dueDate === undefined || serverTask.due_date === lock.dueDate) &&
+            (lock.status === undefined || serverTask.status === lock.status)
+          ) {
+            optimisticLocksRef.current.delete(serverTask.id);
+            return serverTask;
+          }
+          // If optimistic update is recent (< 10 seconds), protect the user's optimistic values
+          if (now - lock.timestamp < 10000) {
+            return {
+              ...serverTask,
+              due_date: lock.dueDate !== undefined ? lock.dueDate : serverTask.due_date,
+              status: lock.status !== undefined ? (lock.status as TaskWithDetails["status"]) : serverTask.status,
+            };
+          } else {
+            optimisticLocksRef.current.delete(serverTask.id);
+          }
+        }
+        return serverTask;
+      });
+    });
   }
+
+  const updateTaskOptimistic = useCallback((taskId: string, updates: Partial<TaskWithDetails>) => {
+    optimisticLocksRef.current.set(taskId, {
+      dueDate: updates.due_date,
+      status: updates.status,
+      timestamp: Date.now(),
+    });
+    setTasks((prev) =>
+      prev.map((t) => (t.id === taskId ? { ...t, ...updates, updated_at: new Date().toISOString() } : t))
+    );
+  }, []);
+
+  const rollbackOptimistic = useCallback((taskId: string, previousTask: TaskWithDetails) => {
+    optimisticLocksRef.current.delete(taskId);
+    setTasks((prev) => prev.map((t) => (t.id === taskId ? previousTask : t)));
+  }, []);
 
   useEffect(() => {
     if (!projectId) return;
@@ -150,5 +198,7 @@ export function useProjectRealtime({
     tasks,
     setTasks,
     connectionStatus,
+    updateTaskOptimistic,
+    rollbackOptimistic,
   };
 }

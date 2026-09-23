@@ -28,6 +28,7 @@ interface TimelineRowProps {
   assignees: WorkspaceAssignee[];
   userRole: WorkspaceRole;
   currentUserId?: string;
+  onUpdateDueDate?: (taskId: string, newDueDate: string | null) => Promise<void> | void;
 }
 
 export function TimelineRow({
@@ -39,6 +40,7 @@ export function TimelineRow({
   assignees,
   userRole,
   currentUserId,
+  onUpdateDueDate,
 }: TimelineRowProps) {
   const position = getTaskTimelinePosition(task.due_date, dateRange);
 
@@ -117,6 +119,7 @@ export function TimelineRow({
               assignees={assignees}
               userRole={userRole}
               currentUserId={currentUserId}
+              onUpdateDueDate={onUpdateDueDate}
             />
           );
         })}
@@ -135,6 +138,7 @@ function TimelineDateCell({
   assignees,
   userRole,
   currentUserId,
+  onUpdateDueDate,
 }: {
   day: TimelineDate;
   isTaskDay: boolean;
@@ -145,6 +149,7 @@ function TimelineDateCell({
   assignees: WorkspaceAssignee[];
   userRole: WorkspaceRole;
   currentUserId?: string;
+  onUpdateDueDate?: (taskId: string, newDueDate: string | null) => Promise<void> | void;
 }) {
   const router = useRouter();
   const [isDragOver, setIsDragOver] = React.useState(false);
@@ -175,19 +180,23 @@ function TimelineDateCell({
 
       if (data.currentDueDate === day.dateKey) return;
 
-      const res = await updateTaskDueDateAction(
-        data.taskId,
-        workspaceId,
-        projectId,
-        workspaceSlug,
-        day.dateKey
-      );
-
-      if (res.success) {
-        toast.success(`Rescheduled "${data.taskTitle || "Task"}" to ${day.dateKey}`);
-        router.refresh();
+      if (onUpdateDueDate) {
+        await onUpdateDueDate(data.taskId, day.dateKey);
       } else {
-        toast.error(res.error || "Failed to reschedule task.");
+        const res = await updateTaskDueDateAction(
+          data.taskId,
+          workspaceId,
+          projectId,
+          workspaceSlug,
+          day.dateKey
+        );
+
+        if (res.success) {
+          toast.success(`Rescheduled "${data.taskTitle || "Task"}" to ${day.dateKey}`);
+          router.refresh();
+        } else {
+          toast.error(res.error || "Failed to reschedule task.");
+        }
       }
     } catch (err) {
       console.error("[TimelineDateCell] Drop error:", err);

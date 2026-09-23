@@ -35,6 +35,7 @@ export function ProjectCard({ project, workspaceSlug }: ProjectCardProps) {
   return (
     <Link
       href={`/app/${workspaceSlug}/projects/${project.id}`}
+      prefetch={true}
       className="block h-full group/card outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-xl transition-all"
     >
       <Card

@@ -25,6 +25,7 @@ interface TaskCalendarProps {
   assignees: WorkspaceAssignee[];
   userRole: WorkspaceRole;
   currentUserId?: string;
+  onUpdateDueDate?: (taskId: string, newDueDate: string | null) => Promise<void> | void;
 }
 
 export function TaskCalendar({
@@ -35,6 +36,7 @@ export function TaskCalendar({
   assignees,
   userRole,
   currentUserId,
+  onUpdateDueDate,
 }: TaskCalendarProps) {
   const [currentDate, setCurrentDate] = React.useState<Date>(() => new Date());
   const [filters, setFilters] = React.useState<TaskTableFilters>(DEFAULT_TASK_FILTERS);
@@ -173,6 +175,7 @@ export function TaskCalendar({
                     assignees={assignees}
                     userRole={userRole}
                     currentUserId={currentUserId}
+                    onUpdateDueDate={onUpdateDueDate}
                   />
                 );
               })}

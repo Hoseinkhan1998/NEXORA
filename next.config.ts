@@ -43,6 +43,12 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   output: "standalone",
+  experimental: {
+    staleTimes: {
+      dynamic: 60,
+      static: 300,
+    },
+  },
   async headers() {
     return [
       {

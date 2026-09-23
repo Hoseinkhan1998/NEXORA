@@ -32,6 +32,7 @@ interface TaskTimelineProps {
   assignees: WorkspaceAssignee[];
   userRole: WorkspaceRole;
   currentUserId?: string;
+  onUpdateDueDate?: (taskId: string, newDueDate: string | null) => Promise<void> | void;
 }
 
 export function TaskTimeline({
@@ -42,6 +43,7 @@ export function TaskTimeline({
   assignees,
   userRole,
   currentUserId,
+  onUpdateDueDate,
 }: TaskTimelineProps) {
   const [anchorDate, setAnchorDate] = React.useState<Date>(() => new Date());
   const [filters, setFilters] = React.useState<TaskTableFilters>(DEFAULT_TASK_FILTERS);
@@ -241,6 +243,7 @@ export function TaskTimeline({
                     assignees={assignees}
                     userRole={userRole}
                     currentUserId={currentUserId}
+                    onUpdateDueDate={onUpdateDueDate}
                   />
                 ))
               ) : (
