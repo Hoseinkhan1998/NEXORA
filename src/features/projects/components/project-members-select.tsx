@@ -13,12 +13,12 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { ChevronDown, User, Search, X } from "lucide-react";
+import { ChevronDown, Users, Search, X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { WorkspaceAssignee } from "../types";
+import type { WorkspaceAssignee } from "@/features/tasks/types";
 
-interface MultiAssigneeSelectProps {
-  assignees: WorkspaceAssignee[];
+interface ProjectMembersSelectProps {
+  workspaceMembers: WorkspaceAssignee[];
   selectedIds: string[];
   onChange: (ids: string[]) => void;
   disabled?: boolean;
@@ -40,29 +40,29 @@ function getInitials(name?: string | null, email?: string): string {
   return "U";
 }
 
-export function MultiAssigneeSelect({
-  assignees,
+export function ProjectMembersSelect({
+  workspaceMembers,
   selectedIds,
   onChange,
   disabled = false,
-  placeholder = "Assign to members...",
+  placeholder = "Assign workspace members to project...",
   className,
-}: MultiAssigneeSelectProps) {
+}: ProjectMembersSelectProps) {
   const [search, setSearch] = React.useState("");
 
   const selectedMembers = React.useMemo(() => {
-    return assignees.filter((a) => selectedIds.includes(a.userId));
-  }, [assignees, selectedIds]);
+    return workspaceMembers.filter((m) => selectedIds.includes(m.userId));
+  }, [workspaceMembers, selectedIds]);
 
-  const filteredAssignees = React.useMemo(() => {
-    if (!search.trim()) return assignees;
+  const filteredMembers = React.useMemo(() => {
+    if (!search.trim()) return workspaceMembers;
     const query = search.toLowerCase();
-    return assignees.filter(
-      (a) =>
-        (a.fullName && a.fullName.toLowerCase().includes(query)) ||
-        a.email.toLowerCase().includes(query)
+    return workspaceMembers.filter(
+      (m) =>
+        (m.fullName && m.fullName.toLowerCase().includes(query)) ||
+        m.email.toLowerCase().includes(query)
     );
-  }, [assignees, search]);
+  }, [workspaceMembers, search]);
 
   const handleToggle = (userId: string) => {
     if (selectedIds.includes(userId)) {
@@ -70,6 +70,13 @@ export function MultiAssigneeSelect({
     } else {
       onChange([...selectedIds, userId]);
     }
+  };
+
+  const handleSelectAll = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const allIds = Array.from(new Set([...selectedIds, ...filteredMembers.map((m) => m.userId)]));
+    onChange(allIds);
   };
 
   const handleClearAll = (e: React.MouseEvent) => {
@@ -92,7 +99,7 @@ export function MultiAssigneeSelect({
           <div className="flex items-center gap-2 min-w-0 overflow-hidden">
             {selectedMembers.length === 0 && (
               <div className="flex items-center gap-2 text-muted-foreground">
-                <User className="h-3.5 w-3.5 opacity-60 shrink-0" />
+                <Users className="h-3.5 w-3.5 opacity-60 shrink-0" />
                 <span className="truncate">{placeholder}</span>
               </div>
             )}
@@ -129,7 +136,7 @@ export function MultiAssigneeSelect({
                   ))}
                 </div>
                 <span className="truncate text-foreground font-medium">
-                  {selectedMembers.length} assignees
+                  {selectedMembers.length} members selected
                 </span>
               </div>
             )}
@@ -160,7 +167,7 @@ export function MultiAssigneeSelect({
           <div className="relative">
             <Search className="absolute left-2 top-2 h-3.5 w-3.5 text-muted-foreground" />
             <Input
-              placeholder="Search members..."
+              placeholder="Search workspace members..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="h-8 pl-7 text-xs"
@@ -171,24 +178,15 @@ export function MultiAssigneeSelect({
           <div className="flex items-center justify-between mt-2 pt-1 border-t border-border/50 text-[11px]">
             <button
               type="button"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                const allIds = Array.from(new Set([...selectedIds, ...filteredAssignees.map((a) => a.userId)]));
-                onChange(allIds);
-              }}
+              onClick={handleSelectAll}
               className="text-primary hover:underline font-medium"
             >
-              Select All
+              Select All ({filteredMembers.length})
             </button>
             {selectedIds.length > 0 && (
               <button
                 type="button"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  onChange([]);
-                }}
+                onClick={handleClearAll}
                 className="text-muted-foreground hover:text-destructive"
               >
                 Clear All
@@ -199,10 +197,10 @@ export function MultiAssigneeSelect({
         <DropdownMenuSeparator />
 
         <div className="max-h-56 overflow-y-auto space-y-0.5">
-          {filteredAssignees.length === 0 ? (
+          {filteredMembers.length === 0 ? (
             <div className="py-4 text-center text-xs text-muted-foreground">No members found</div>
           ) : (
-            filteredAssignees.map((member) => {
+            filteredMembers.map((member) => {
               const isChecked = selectedIds.includes(member.userId);
               const displayName = member.fullName || member.email.split("@")[0] || "User";
               const initials = getInitials(member.fullName, member.email);
@@ -244,22 +242,6 @@ export function MultiAssigneeSelect({
             })
           )}
         </div>
-
-        {selectedIds.length > 0 && (
-          <>
-            <DropdownMenuSeparator />
-            <div className="p-1 flex items-center justify-between text-[11px] text-muted-foreground px-2">
-              <span>{selectedIds.length} selected</span>
-              <button
-                type="button"
-                onClick={() => onChange([])}
-                className="text-primary hover:underline font-medium"
-              >
-                Clear all
-              </button>
-            </div>
-          </>
-        )}
       </DropdownMenuContent>
     </DropdownMenu>
   );

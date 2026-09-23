@@ -2,10 +2,10 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getWorkspaceBySlug } from "@/features/workspaces";
-import { getProjectById } from "@/features/projects/queries/get-projects";
+import { getProjectById, getProjectMemberIds } from "@/features/projects/queries/get-projects";
 import { EditProjectDialog } from "@/features/projects/components/edit-project-dialog";
 import { ArchiveProjectButton } from "@/features/projects/components/archive-project-button";
-import { getProjectTasks, getWorkspaceAssignees } from "@/features/tasks/queries/get-tasks";
+import { getProjectTasks, getProjectAssignees, getWorkspaceAssignees } from "@/features/tasks/queries/get-tasks";
 import { ProjectViewContent } from "@/features/projects/components/project-view-content";
 import { parseProjectView } from "@/features/projects/types/views";
 import { getCurrentUser } from "@/features/auth/utils/get-current-user";
@@ -52,10 +52,12 @@ export default async function ProjectDetailPage({ params, searchParams }: Projec
     notFound();
   }
 
-  // 3. Fetch project tasks, workspace assignees, current user session, and initial activities in parallel
-  const [tasks, assignees, { user, profile }, initialActivities] = await Promise.all([
+  // 3. Fetch project tasks, project assignees, workspace assignees, and activities in parallel
+  const [tasks, assignees, workspaceMembers, projectMemberIds, { user, profile }, initialActivities] = await Promise.all([
     getProjectTasks(project.id, workspace.id),
+    getProjectAssignees(project.id, workspace.id),
     getWorkspaceAssignees(workspace.id),
+    getProjectMemberIds(project.id),
     getCurrentUser(),
     getProjectActivities(project.id, workspace.id, 50),
   ]);
@@ -147,7 +149,12 @@ export default async function ProjectDetailPage({ params, searchParams }: Projec
 
           {canModify && (
             <>
-              <EditProjectDialog project={project} workspaceSlug={workspace.slug} />
+              <EditProjectDialog
+                project={project}
+                workspaceSlug={workspace.slug}
+                workspaceMembers={workspaceMembers}
+                initialMemberIds={projectMemberIds}
+              />
               <ArchiveProjectButton
                 projectId={project.id}
                 workspaceId={workspace.id}

@@ -24,6 +24,7 @@ const TASK_SELECT_WITH_MULTI_ASSIGNEES = `
   created_by,
   due_date,
   position,
+  is_private,
   created_at,
   updated_at,
   assignees_rel:task_assignees (
@@ -59,6 +60,7 @@ const TASK_SELECT_LEGACY = `
   created_by,
   due_date,
   position,
+  is_private,
   created_at,
   updated_at,
   assignee:profiles!tasks_assignee_id_fkey (
@@ -126,6 +128,7 @@ function mapTaskRow(item: any): TaskWithDetails {
     created_by: item.created_by,
     due_date: item.due_date,
     position: item.position,
+    is_private: Boolean(item.is_private),
     created_at: item.created_at,
     updated_at: item.updated_at,
     assignee: primaryAssignee,
@@ -234,8 +237,11 @@ export async function getTaskById(
 
 /**
  * Retrieves valid assignees for a workspace (strictly workspace members).
+ * Cached per-request using React cache.
  */
-export async function getWorkspaceAssignees(workspaceId: string): Promise<WorkspaceAssignee[]> {
+export const getWorkspaceAssignees = cache(async function getWorkspaceAssignees(
+  workspaceId: string
+): Promise<WorkspaceAssignee[]> {
   const supabase = await createClient();
   const {
     data: { user },
@@ -276,4 +282,54 @@ export async function getWorkspaceAssignees(workspaceId: string): Promise<Worksp
       avatarUrl: profile?.avatar_url || null,
     };
   });
-}
+});
+
+/**
+ * Retrieves valid assignees for a specific project (strictly project members).
+ * Falls back cleanly to workspace assignees if project_members table has no records.
+ * Cached per-request using React cache.
+ */
+export const getProjectAssignees = cache(async function getProjectAssignees(
+  projectId: string,
+  workspaceId: string
+): Promise<WorkspaceAssignee[]> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return [];
+  }
+
+  const { data, error } = await supabase
+    .from("project_members")
+    .select(
+      `
+      user_id,
+      role,
+      profile:profiles (
+        id,
+        email,
+        full_name,
+        avatar_url
+      )
+    `
+    )
+    .eq("project_id", projectId);
+
+  if (error || !data || data.length === 0) {
+    return getWorkspaceAssignees(workspaceId);
+  }
+
+  return data.map((item) => {
+    const profile = Array.isArray(item.profile) ? item.profile[0] : item.profile;
+    return {
+      userId: item.user_id,
+      role: item.role,
+      email: profile?.email || "Unknown",
+      fullName: profile?.full_name || null,
+      avatarUrl: profile?.avatar_url || null,
+    };
+  });
+});

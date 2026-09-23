@@ -90,6 +90,23 @@ export async function updateProjectAction(
     };
   }
 
+  if (validated.data.memberIds !== undefined) {
+    try {
+      const targetMemberIds = new Set(validated.data.memberIds);
+      targetMemberIds.add(updatedProject.created_by);
+
+      await supabase.from("project_members").delete().eq("project_id", projectId);
+      const rows = Array.from(targetMemberIds).map((uid) => ({
+        project_id: projectId,
+        user_id: uid,
+        role: uid === updatedProject.created_by ? "lead" : "member",
+      }));
+      await supabase.from("project_members").insert(rows);
+    } catch (err) {
+      console.warn("[updateProjectAction] Could not sync project_members:", err);
+    }
+  }
+
   revalidatePath(`/app/${workspaceSlug}/projects`);
   revalidatePath(`/app/${workspaceSlug}/projects/${projectId}`);
 

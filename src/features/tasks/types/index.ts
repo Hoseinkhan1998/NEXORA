@@ -14,6 +14,7 @@ export interface Task {
   created_by: string;
   due_date: string | null;
   position: number;
+  is_private?: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -54,6 +55,7 @@ export interface CreateTaskInput {
   assigneeIds?: string[];
   dueDate?: string | null;
   position?: number;
+  isPrivate?: boolean;
 }
 
 export interface UpdateTaskInput {
@@ -65,4 +67,5 @@ export interface UpdateTaskInput {
   assigneeIds?: string[];
   dueDate?: string | null;
   position?: number;
+  isPrivate?: boolean;
 }

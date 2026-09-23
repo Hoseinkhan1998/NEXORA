@@ -6,6 +6,7 @@ import { TimelineTaskEvent } from "./timeline-task-event";
 import { EditTaskDialog } from "../edit-task-dialog";
 import { AssigneeAvatarStack } from "../assignee-avatar-stack";
 import { Badge } from "@/components/ui/badge";
+import { Lock } from "lucide-react";
 import { updateTaskDueDateAction } from "../../actions/update-task-due-date";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -57,11 +58,12 @@ export function TimelineRow({
       <div className="flex items-center gap-2 min-w-0 flex-1">
         <span
           className={cn(
-            "text-xs font-medium truncate text-foreground group-hover/info:text-primary transition-colors",
+            "text-xs font-medium truncate text-foreground group-hover/info:text-primary transition-colors inline-flex items-center gap-1",
             isDone && "line-through text-muted-foreground"
           )}
         >
-          {task.title}
+          <span className="truncate">{task.title}</span>
+          {task.is_private && <Lock className="h-2.5 w-2.5 text-amber-500 shrink-0" />}
         </span>
       </div>
 

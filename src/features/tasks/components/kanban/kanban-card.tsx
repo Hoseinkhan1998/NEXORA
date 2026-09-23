@@ -4,7 +4,7 @@ import * as React from "react";
 import { TaskPriorityBadge } from "../task-priority-badge";
 import { EditTaskDialog } from "../edit-task-dialog";
 import { AssigneeAvatarStack } from "../assignee-avatar-stack";
-import { Calendar, AlertCircle, GripVertical } from "lucide-react";
+import { Calendar, AlertCircle, GripVertical, Lock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { TaskWithDetails, WorkspaceAssignee } from "../../types";
 import type { WorkspaceRole } from "@/features/workspaces/types";
@@ -111,6 +111,11 @@ export const KanbanCardInternal = React.forwardRef<HTMLDivElement, KanbanCardPro
               </button>
             )}
             <TaskPriorityBadge priority={task.priority} />
+            {task.is_private && (
+              <span title="Confidential / Private Task" className="inline-flex items-center text-amber-500">
+                <Lock className="h-3 w-3" />
+              </span>
+            )}
           </div>
         </div>
 

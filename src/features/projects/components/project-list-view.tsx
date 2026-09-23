@@ -10,12 +10,14 @@ import { ProjectEmptyState } from "./project-empty-state";
 import { CreateProjectDialog } from "./create-project-dialog";
 import type { ProjectWithCreator } from "../types";
 import type { WorkspaceRole } from "@/features/workspaces/types";
+import type { WorkspaceAssignee } from "@/features/tasks/types";
 
 interface ProjectListViewProps {
   projects: ProjectWithCreator[];
   workspaceId: string;
   workspaceSlug: string;
   userRole: WorkspaceRole;
+  workspaceMembers?: WorkspaceAssignee[];
 }
 
 export function ProjectListView({
@@ -23,6 +25,7 @@ export function ProjectListView({
   workspaceId,
   workspaceSlug,
   userRole,
+  workspaceMembers = [],
 }: ProjectListViewProps) {
   const [searchQuery, setSearchQuery] = React.useState("");
   const [activeTab, setActiveTab] = React.useState("active");
@@ -71,7 +74,11 @@ export function ProjectListView({
         </div>
 
         {canCreate ? (
-          <CreateProjectDialog workspaceId={workspaceId} workspaceSlug={workspaceSlug} />
+          <CreateProjectDialog
+            workspaceId={workspaceId}
+            workspaceSlug={workspaceSlug}
+            workspaceMembers={workspaceMembers}
+          />
         ) : (
           <div className="flex items-center gap-1.5 text-xs text-muted-foreground bg-muted/60 px-2.5 py-1.5 rounded-md border border-border/50">
             <ShieldAlert className="h-3.5 w-3.5 text-amber-500" />
@@ -126,7 +133,11 @@ export function ProjectListView({
               }
               action={
                 canCreate && !searchQuery && activeTab !== "archived" ? (
-                  <CreateProjectDialog workspaceId={workspaceId} workspaceSlug={workspaceSlug} />
+                  <CreateProjectDialog
+                    workspaceId={workspaceId}
+                    workspaceSlug={workspaceSlug}
+                    workspaceMembers={workspaceMembers}
+                  />
                 ) : undefined
               }
             />

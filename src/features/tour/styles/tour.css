@@ -3,8 +3,6 @@
    Modern, Dark/Light Mode Adaptive, Glassmorphic Styling
    ============================================================================== */
 
-@import "driver.js/dist/driver.css";
-
 /* Backdrop Overlay: SVG container must remain transparent so the cutout hole is crystal clear */
 .driver-overlay {
   background: transparent !important;

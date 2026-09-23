@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { EditTaskDialog } from "../edit-task-dialog";
+import { Lock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { TaskWithDetails, WorkspaceAssignee, TaskPriority, TaskStatus } from "../../types";
 import type { WorkspaceRole } from "@/features/workspaces/types";
@@ -80,11 +81,12 @@ export function CalendarTaskItem({
       <span className={cn("h-1.5 w-1.5 rounded-full shrink-0", priorityDot)} />
       <span
         className={cn(
-          "truncate flex-1 text-foreground",
+          "truncate flex-1 text-foreground inline-flex items-center gap-1",
           isDone && "line-through text-muted-foreground"
         )}
       >
-        {task.title}
+        <span className="truncate">{task.title}</span>
+        {task.is_private && <Lock className="h-2.5 w-2.5 text-amber-500 shrink-0" />}
       </span>
     </div>
   );

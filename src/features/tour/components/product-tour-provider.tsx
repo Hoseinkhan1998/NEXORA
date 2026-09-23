@@ -5,6 +5,7 @@ import type { TourContextValue, TourRole } from "../types";
 import { createTourDriver } from "../lib/tour-driver";
 import { hasCompletedTour } from "../lib/tour-storage";
 import { MobileTourModal } from "./mobile-tour-modal";
+import "driver.js/dist/driver.css";
 import "../styles/tour.css";
 
 const defaultTourContext: TourContextValue = {

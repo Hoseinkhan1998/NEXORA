@@ -34,7 +34,7 @@ export const getWorkspaceProjects = cache(async function getWorkspaceProjects(
       created_by,
       created_at,
       updated_at,
-      creator:profiles (
+      creator:profiles!projects_created_by_fkey (
         id,
         email,
         full_name,
@@ -112,7 +112,7 @@ export const getProjectById = cache(async function getProjectById(
       created_by,
       created_at,
       updated_at,
-      creator:profiles (
+      creator:profiles!projects_created_by_fkey (
         id,
         email,
         full_name,
@@ -150,4 +150,24 @@ export const getProjectById = cache(async function getProjectById(
         }
       : null,
   };
+});
+
+/**
+ * Retrieves the list of member user IDs assigned to a project.
+ * Cached per-request using React cache.
+ */
+export const getProjectMemberIds = cache(async function getProjectMemberIds(
+  projectId: string
+): Promise<string[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("project_members")
+    .select("user_id")
+    .eq("project_id", projectId);
+
+  if (error || !data) {
+    return [];
+  }
+
+  return data.map((item) => item.user_id);
 });

@@ -23,6 +23,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import { MultiAssigneeSelect } from "./multi-assignee-select";
 import { TaskStatusBadge } from "./task-status-badge";
 import { TaskPriorityBadge } from "./task-priority-badge";
@@ -37,6 +38,7 @@ import {
   AlertCircle,
   ShieldAlert,
   ArrowLeft,
+  Lock,
 } from "lucide-react";
 import { updateTaskAction } from "../actions/update-task";
 import { deleteTaskAction } from "../actions/delete-task";
@@ -94,6 +96,7 @@ export function TaskDetailDialog({
     getInitialAssigneeIds(task)
   );
   const [dueDate, setDueDate] = React.useState<string>(task.due_date || "");
+  const [isPrivate, setIsPrivate] = React.useState(Boolean(task.is_private));
   const [errors, setErrors] = React.useState<Record<string, string>>({});
   const [generalError, setGeneralError] = React.useState<string | null>(null);
   const [isPending, setIsPending] = React.useState(false);
@@ -120,6 +123,7 @@ export function TaskDetailDialog({
     setPriority(task.priority);
     setSelectedAssigneeIds(getInitialAssigneeIds(task));
     setDueDate(task.due_date || "");
+    setIsPrivate(Boolean(task.is_private));
     setErrors({});
     setGeneralError(null);
     setMode("view");
@@ -146,6 +150,7 @@ export function TaskDetailDialog({
       priority,
       assigneeIds: selectedAssigneeIds,
       dueDate: dueDate || null,
+      isPrivate,
     });
 
     if (!validation.success) {
@@ -243,6 +248,15 @@ export function TaskDetailDialog({
               <div className="flex items-center gap-2 flex-wrap">
                 <TaskStatusBadge status={task.status} />
                 <TaskPriorityBadge priority={task.priority} />
+                {task.is_private && (
+                  <Badge
+                    variant="outline"
+                    className="text-amber-500 border-amber-500/30 bg-amber-500/10 gap-1 text-[11px] font-medium"
+                  >
+                    <Lock className="h-3 w-3" />
+                    <span>Private</span>
+                  </Badge>
+                )}
               </div>
 
               <div className="flex items-center gap-2">
@@ -534,6 +548,29 @@ export function TaskDetailDialog({
                 rows={3}
                 disabled={isPending}
                 className="text-xs resize-none"
+              />
+            </div>
+
+            {/* Private Task Toggle */}
+            <div className="flex items-start justify-between rounded-lg border border-border/60 bg-muted/20 p-3 gap-3">
+              <div className="space-y-0.5">
+                <div className="flex items-center gap-1.5">
+                  <Lock className="h-3.5 w-3.5 text-amber-500" />
+                  <Label htmlFor="task-edit-private" className="text-xs font-semibold cursor-pointer">
+                    Private Task (محرمانه / خصوصی)
+                  </Label>
+                </div>
+                <p className="text-[11px] text-muted-foreground">
+                  When enabled, this task is confidential and visible only to the creator and assignees.
+                </p>
+              </div>
+              <input
+                type="checkbox"
+                id="task-edit-private"
+                checked={isPrivate}
+                onChange={(e) => setIsPrivate(e.target.checked)}
+                disabled={isPending}
+                className="h-4 w-4 rounded border-border text-primary focus:ring-primary mt-0.5 cursor-pointer"
               />
             </div>
 

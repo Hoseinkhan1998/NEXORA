@@ -28,6 +28,7 @@ export const createTaskSchema = z.object({
     .optional()
     .or(z.literal("")),
   position: z.coerce.number().optional(),
+  isPrivate: z.boolean().optional().default(false),
 });
 
 export type CreateTaskSchemaInput = z.infer<typeof createTaskSchema>;
@@ -61,6 +62,7 @@ export const updateTaskSchema = z.object({
     .optional()
     .or(z.literal("")),
   position: z.coerce.number().optional(),
+  isPrivate: z.boolean().optional(),
 });
 
 export type UpdateTaskSchemaInput = z.infer<typeof updateTaskSchema>;

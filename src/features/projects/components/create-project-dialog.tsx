@@ -20,23 +20,30 @@ import { Plus, AlertCircle, Check } from "lucide-react";
 import { createProjectAction } from "../actions/create-project";
 import { createProjectSchema, PROJECT_COLOR_PALETTE } from "../schemas/project";
 import { generateProjectSlug } from "../lib/slug";
+import { ProjectMembersSelect } from "./project-members-select";
+import type { WorkspaceAssignee } from "@/features/tasks/types";
 
 interface CreateProjectDialogProps {
   workspaceId: string;
   workspaceSlug: string;
+  workspaceMembers?: WorkspaceAssignee[];
   trigger?: React.ReactNode;
+  redirectToProject?: boolean;
 }
 
 export function CreateProjectDialog({
   workspaceId,
   workspaceSlug,
+  workspaceMembers = [],
   trigger,
+  redirectToProject = true,
 }: CreateProjectDialogProps) {
   const router = useRouter();
   const [open, setOpen] = React.useState(false);
   const [name, setName] = React.useState("");
   const [description, setDescription] = React.useState("");
   const [color, setColor] = React.useState<string>(PROJECT_COLOR_PALETTE[0] || "#3B82F6");
+  const [selectedMemberIds, setSelectedMemberIds] = React.useState<string[]>([]);
   const [errors, setErrors] = React.useState<Record<string, string>>({});
   const [generalError, setGeneralError] = React.useState<string | null>(null);
   const [isPending, setIsPending] = React.useState(false);
@@ -50,6 +57,7 @@ export function CreateProjectDialog({
     setName("");
     setDescription("");
     setColor(PROJECT_COLOR_PALETTE[0] || "#3B82F6");
+    setSelectedMemberIds([]);
     setErrors({});
     setGeneralError(null);
     setIsPending(false);
@@ -90,6 +98,7 @@ export function CreateProjectDialog({
       formData.set("name", name);
       if (description) formData.set("description", description);
       formData.set("color", color);
+      selectedMemberIds.forEach((id) => formData.append("memberIds", id));
 
       const result = await createProjectAction(workspaceId, workspaceSlug, null, formData);
 
@@ -110,7 +119,9 @@ export function CreateProjectDialog({
       resetForm();
 
       if (result.project) {
-        router.push(`/app/${workspaceSlug}/projects/${result.project.id}`);
+        if (redirectToProject) {
+          router.push(`/app/${workspaceSlug}/projects/${result.project.id}`);
+        }
         router.refresh();
       }
     } catch {
@@ -206,6 +217,23 @@ export function CreateProjectDialog({
             />
             {errors.description && <p className="text-xs text-destructive">{errors.description}</p>}
           </div>
+
+          {/* Project Members Selection */}
+          {workspaceMembers.length > 0 && (
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold">Project Members</Label>
+              <ProjectMembersSelect
+                workspaceMembers={workspaceMembers}
+                selectedIds={selectedMemberIds}
+                onChange={setSelectedMemberIds}
+                disabled={isPending}
+                placeholder="Assign members to this project..."
+              />
+              <p className="text-[11px] text-muted-foreground">
+                Only selected members (and workspace owners/admins) can view and work on this project.
+              </p>
+            </div>
+          )}
 
           {/* Color Palette Picker */}
           <div className="space-y-1.5">

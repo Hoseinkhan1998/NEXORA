@@ -130,6 +130,7 @@ export function useProjectRealtime({
                 created_by: rawNew.created_by as string,
                 due_date: (rawNew.due_date as string | null) || null,
                 position: Number(rawNew.position) || 0,
+                is_private: Boolean(rawNew.is_private),
                 created_at: rawNew.created_at as string,
                 updated_at: rawNew.updated_at as string,
                 assignee: assigneeObj,
@@ -156,6 +157,7 @@ export function useProjectRealtime({
                   assignee_id: assigneeId,
                   due_date: (rawNew.due_date as string | null) || null,
                   position: Number(rawNew.position) || t.position,
+                  is_private: rawNew.is_private !== undefined ? Boolean(rawNew.is_private) : t.is_private,
                   updated_at: rawNew.updated_at as string,
                   assignee:
                     assigneeId !== t.assignee_id

@@ -32,10 +32,21 @@ export interface ProjectWithWorkspace extends Project {
   };
 }
 
+export interface ProjectMember {
+  projectId: string;
+  userId: string;
+  role: "lead" | "member";
+  createdAt: string;
+  fullName: string | null;
+  email: string;
+  avatarUrl: string | null;
+}
+
 export interface CreateProjectInput {
   name: string;
   description?: string;
   color?: string;
+  memberIds?: string[];
 }
 
 export interface UpdateProjectInput {
@@ -43,6 +54,7 @@ export interface UpdateProjectInput {
   description?: string | null;
   color?: string | null;
   status?: ProjectStatus;
+  memberIds?: string[];
 }
 
 export * from "./views";

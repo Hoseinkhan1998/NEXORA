@@ -14,3 +14,4 @@ export * from "./components/project-list-view";
 export * from "./components/project-view-switcher";
 export * from "./components/project-view-placeholder";
 export * from "./components/project-view-content";
+export * from "./components/project-members-select";

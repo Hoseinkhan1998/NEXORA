@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getWorkspaceBySlug } from "@/features/workspaces";
-import { getWorkspaceProjects } from "@/features/projects";
+import { getWorkspaceProjects, CreateProjectDialog } from "@/features/projects";
+import { getWorkspaceAssignees } from "@/features/tasks/queries/get-tasks";
 import { createClient } from "@/lib/supabase/server";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -46,11 +47,14 @@ export default async function WorkspacePage({ params }: WorkspacePageProps) {
     notFound();
   }
 
-  // Fetch workspace projects and task stats
-  const [projects, supabase] = await Promise.all([
+  // Fetch workspace projects, members, and task stats in parallel
+  const [projects, supabase, workspaceMembers] = await Promise.all([
     getWorkspaceProjects(workspace.id),
     createClient(),
+    getWorkspaceAssignees(workspace.id),
   ]);
+
+  const canCreate = workspace.role !== "viewer";
 
   const { data: tasksData } = await supabase
     .from("tasks")
@@ -108,9 +112,22 @@ export default async function WorkspacePage({ params }: WorkspacePageProps) {
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
-          <Button asChild size="sm" className="h-9 gap-1.5 shadow-xs">
+          {canCreate && (
+            <CreateProjectDialog
+              workspaceId={workspace.id}
+              workspaceSlug={workspace.slug}
+              workspaceMembers={workspaceMembers}
+              redirectToProject={false}
+              trigger={
+                <Button size="sm" className="h-9 gap-1.5 shadow-xs">
+                  <PlusCircle className="h-4 w-4" />
+                  <span>Create Project</span>
+                </Button>
+              }
+            />
+          )}
+          <Button asChild variant="outline" size="sm" className="h-9 gap-1.5 shadow-xs">
             <Link href={`/app/${workspace.slug}/projects`} prefetch={true}>
-              <PlusCircle className="h-4 w-4" />
               <span>Explore Projects</span>
             </Link>
           </Button>
@@ -214,12 +231,27 @@ export default async function WorkspacePage({ params }: WorkspacePageProps) {
             <p className="text-xs text-muted-foreground max-w-sm mx-auto mb-4">
               Get started by creating your first project to organize tasks, track milestones, and collaborate with your team.
             </p>
-            <Button asChild size="sm" className="h-8 text-xs gap-1.5">
-              <Link href={`/app/${workspace.slug}/projects`} prefetch={true}>
-                <PlusCircle className="h-3.5 w-3.5" />
-                <span>Create First Project</span>
-              </Link>
-            </Button>
+            {canCreate ? (
+              <CreateProjectDialog
+                workspaceId={workspace.id}
+                workspaceSlug={workspace.slug}
+                workspaceMembers={workspaceMembers}
+                redirectToProject={false}
+                trigger={
+                  <Button size="sm" className="h-8 text-xs gap-1.5 shadow-xs">
+                    <PlusCircle className="h-3.5 w-3.5" />
+                    <span>Create First Project</span>
+                  </Button>
+                }
+              />
+            ) : (
+              <Button asChild size="sm" className="h-8 text-xs gap-1.5 shadow-xs">
+                <Link href={`/app/${workspace.slug}/projects`} prefetch={true}>
+                  <FolderKanban className="h-3.5 w-3.5" />
+                  <span>View Projects</span>
+                </Link>
+              </Button>
+            )}
           </Card>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

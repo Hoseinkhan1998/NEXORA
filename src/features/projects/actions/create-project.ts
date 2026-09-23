@@ -93,6 +93,11 @@ export async function createProjectAction(
     finalSlug = buildCandidateSlug(baseSlug, counter);
   }
 
+  const rawMemberIds = formData
+    .getAll("memberIds")
+    .map((v) => v.toString().trim())
+    .filter(Boolean);
+
   const { data: project, error: insertError } = await supabase
     .from("projects")
     .insert({
@@ -115,6 +120,23 @@ export async function createProjectAction(
     };
   }
 
+  // Insert project members (creator is always lead)
+  try {
+    const targetMemberIds = new Set(rawMemberIds);
+    targetMemberIds.add(user.id);
+
+    const memberRows = Array.from(targetMemberIds).map((uid) => ({
+      project_id: project.id,
+      user_id: uid,
+      role: uid === user.id ? "lead" : "member",
+    }));
+
+    await supabase.from("project_members").insert(memberRows);
+  } catch (err) {
+    console.warn("[createProjectAction] Could not insert project_members:", err);
+  }
+
+  revalidatePath(`/app/${workspaceSlug}`);
   revalidatePath(`/app/${workspaceSlug}/projects`);
 
   return {

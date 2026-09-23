@@ -5,7 +5,7 @@ import { TaskStatusBadge } from "./task-status-badge";
 import { TaskPriorityBadge } from "./task-priority-badge";
 import { TaskDetailDialog } from "./task-detail-dialog";
 import { AssigneeAvatarStack } from "./assignee-avatar-stack";
-import { Calendar } from "lucide-react";
+import { Calendar, Lock } from "lucide-react";
 import type { TaskWithDetails, WorkspaceAssignee } from "../types";
 import type { WorkspaceRole } from "@/features/workspaces/types";
 
@@ -61,8 +61,13 @@ export function TaskItem({
           </div>
 
           <div className="space-y-0.5 min-w-0 flex-1">
-            <p className="text-sm font-medium text-foreground tracking-tight leading-snug truncate group-hover:text-primary transition-colors">
-              {task.title}
+            <p className="text-sm font-medium text-foreground tracking-tight leading-snug truncate group-hover:text-primary transition-colors inline-flex items-center gap-1.5">
+              <span>{task.title}</span>
+              {task.is_private && (
+                <span title="Confidential / Private Task" className="inline-flex items-center text-amber-500">
+                  <Lock className="h-3 w-3 shrink-0" />
+                </span>
+              )}
             </p>
             {task.description && (
               <p className="text-xs text-muted-foreground line-clamp-1">{task.description}</p>

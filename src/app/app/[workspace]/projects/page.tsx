@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getWorkspaceBySlug } from "@/features/workspaces";
 import { getWorkspaceProjects, ProjectListView } from "@/features/projects";
+import { getWorkspaceAssignees } from "@/features/tasks/queries/get-tasks";
 
 interface ProjectsPageProps {
   params: Promise<{ workspace: string }>;
@@ -31,7 +32,10 @@ export default async function ProjectsPage({ params }: ProjectsPageProps) {
     notFound();
   }
 
-  const projects = await getWorkspaceProjects(workspace.id);
+  const [projects, workspaceMembers] = await Promise.all([
+    getWorkspaceProjects(workspace.id),
+    getWorkspaceAssignees(workspace.id),
+  ]);
 
   return (
     <ProjectListView
@@ -39,6 +43,7 @@ export default async function ProjectsPage({ params }: ProjectsPageProps) {
       workspaceId={workspace.id}
       workspaceSlug={workspace.slug}
       userRole={workspace.role}
+      workspaceMembers={workspaceMembers}
     />
   );
 }

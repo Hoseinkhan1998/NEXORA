@@ -26,15 +26,25 @@ import {
 import { AlertCircle, Check, Settings2 } from "lucide-react";
 import { updateProjectAction } from "../actions/update-project";
 import { updateProjectSchema, PROJECT_COLOR_PALETTE } from "../schemas/project";
+import { ProjectMembersSelect } from "./project-members-select";
 import type { ProjectWithCreator, ProjectStatus } from "../types";
+import type { WorkspaceAssignee } from "@/features/tasks/types";
 
 interface EditProjectDialogProps {
   project: ProjectWithCreator;
   workspaceSlug: string;
+  workspaceMembers?: WorkspaceAssignee[];
+  initialMemberIds?: string[];
   trigger?: React.ReactNode;
 }
 
-export function EditProjectDialog({ project, workspaceSlug, trigger }: EditProjectDialogProps) {
+export function EditProjectDialog({
+  project,
+  workspaceSlug,
+  workspaceMembers = [],
+  initialMemberIds = [],
+  trigger,
+}: EditProjectDialogProps) {
   const router = useRouter();
   const [open, setOpen] = React.useState(false);
   const [name, setName] = React.useState(project.name);
@@ -43,6 +53,7 @@ export function EditProjectDialog({ project, workspaceSlug, trigger }: EditProje
     project.color || PROJECT_COLOR_PALETTE[0] || "#3B82F6"
   );
   const [status, setStatus] = React.useState<ProjectStatus>(project.status);
+  const [selectedMemberIds, setSelectedMemberIds] = React.useState<string[]>(initialMemberIds);
   const [errors, setErrors] = React.useState<Record<string, string>>({});
   const [generalError, setGeneralError] = React.useState<string | null>(null);
   const [isPending, setIsPending] = React.useState(false);
@@ -53,6 +64,7 @@ export function EditProjectDialog({ project, workspaceSlug, trigger }: EditProje
       setDescription(project.description || "");
       setColor(project.color || PROJECT_COLOR_PALETTE[0] || "#3B82F6");
       setStatus(project.status);
+      setSelectedMemberIds(initialMemberIds);
       setErrors({});
       setGeneralError(null);
     }
@@ -69,6 +81,7 @@ export function EditProjectDialog({ project, workspaceSlug, trigger }: EditProje
       description: description || null,
       color,
       status,
+      memberIds: selectedMemberIds,
     });
 
     if (!validation.success) {
@@ -208,6 +221,23 @@ export function EditProjectDialog({ project, workspaceSlug, trigger }: EditProje
             />
             {errors.description && <p className="text-xs text-destructive">{errors.description}</p>}
           </div>
+
+          {/* Project Members Selection */}
+          {workspaceMembers.length > 0 && (
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold">Project Members</Label>
+              <ProjectMembersSelect
+                workspaceMembers={workspaceMembers}
+                selectedIds={selectedMemberIds}
+                onChange={setSelectedMemberIds}
+                disabled={isPending}
+                placeholder="Assign workspace members to project..."
+              />
+              <p className="text-[11px] text-muted-foreground">
+                Only assigned members can view and access this project and its tasks.
+              </p>
+            </div>
+          )}
 
           {/* Color Palette Picker */}
           <div className="space-y-1.5">

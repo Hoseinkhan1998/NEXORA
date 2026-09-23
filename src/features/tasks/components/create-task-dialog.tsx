@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/select";
 import { MultiAssigneeSelect } from "./multi-assignee-select";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
-import { Plus, AlertCircle } from "lucide-react";
+import { Plus, AlertCircle, Lock } from "lucide-react";
 import { createTaskAction } from "../actions/create-task";
 import { createTaskSchema } from "../schemas/task";
 import type { TaskStatus, TaskPriority, WorkspaceAssignee } from "../types";
@@ -52,6 +52,7 @@ export function CreateTaskDialog({
   const [priority, setPriority] = React.useState<TaskPriority>("medium");
   const [selectedAssigneeIds, setSelectedAssigneeIds] = React.useState<string[]>([]);
   const [dueDate, setDueDate] = React.useState<string>("");
+  const [isPrivate, setIsPrivate] = React.useState(false);
   const [errors, setErrors] = React.useState<Record<string, string>>({});
   const [generalError, setGeneralError] = React.useState<string | null>(null);
   const [isPending, setIsPending] = React.useState(false);
@@ -63,6 +64,7 @@ export function CreateTaskDialog({
     setPriority("medium");
     setSelectedAssigneeIds([]);
     setDueDate("");
+    setIsPrivate(false);
     setErrors({});
     setGeneralError(null);
     setIsPending(false);
@@ -111,6 +113,7 @@ export function CreateTaskDialog({
       selectedAssigneeIds.forEach((id) => formData.append("assigneeIds", id));
       if (selectedAssigneeIds[0]) formData.set("assigneeId", selectedAssigneeIds[0]);
       if (dueDate) formData.set("dueDate", dueDate);
+      formData.set("isPrivate", isPrivate ? "true" : "false");
 
       const result = await createTaskAction(workspaceId, projectId, workspaceSlug, null, formData);
 
@@ -282,6 +285,29 @@ export function CreateTaskDialog({
               {errors.description && (
                 <p className="text-xs text-destructive">{errors.description}</p>
               )}
+            </div>
+
+            {/* Private Task Toggle */}
+            <div className="flex items-start justify-between rounded-lg border border-border/60 bg-muted/20 p-3 gap-3">
+              <div className="space-y-0.5">
+                <div className="flex items-center gap-1.5">
+                  <Lock className="h-3.5 w-3.5 text-amber-500" />
+                  <Label htmlFor="task-private" className="text-xs font-semibold cursor-pointer">
+                    Private Task (محرمانه / خصوصی)
+                  </Label>
+                </div>
+                <p className="text-[11px] text-muted-foreground">
+                  Visible strictly to you (the creator) and assigned members.
+                </p>
+              </div>
+              <input
+                type="checkbox"
+                id="task-private"
+                checked={isPrivate}
+                onChange={(e) => setIsPrivate(e.target.checked)}
+                disabled={isPending}
+                className="h-4 w-4 rounded border-border text-primary focus:ring-primary mt-0.5 cursor-pointer"
+              />
             </div>
 
             <DialogFooter className="pt-2 gap-2 sm:gap-0">

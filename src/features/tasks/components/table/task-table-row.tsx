@@ -6,7 +6,7 @@ import { TaskStatusBadge } from "../task-status-badge";
 import { TaskPriorityBadge } from "../task-priority-badge";
 import { EditTaskDialog } from "../edit-task-dialog";
 import { AssigneeAvatarStack } from "../assignee-avatar-stack";
-import { Calendar, AlertCircle, MoreHorizontal } from "lucide-react";
+import { Calendar, AlertCircle, MoreHorizontal, Lock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { TaskWithDetails, WorkspaceAssignee } from "../../types";
 import type { WorkspaceRole } from "@/features/workspaces/types";
@@ -62,9 +62,14 @@ function TaskTableRowInternal({
             trigger={
               <button
                 type="button"
-                className="text-left font-medium text-foreground hover:text-primary transition-colors line-clamp-1 cursor-pointer focus-visible:outline-none focus-visible:underline"
+                className="text-left font-medium text-foreground hover:text-primary transition-colors line-clamp-1 cursor-pointer focus-visible:outline-none focus-visible:underline inline-flex items-center gap-1.5"
               >
-                {task.title}
+                <span>{task.title}</span>
+                {task.is_private && (
+                  <span title="Confidential / Private Task" className="inline-flex items-center text-amber-500">
+                    <Lock className="h-3 w-3 shrink-0" />
+                  </span>
+                )}
               </button>
             }
           />

@@ -46,6 +46,7 @@ export async function createTaskAction(
     rawAssigneeIds.push(singleAssigneeId);
   }
   const dueDate = formData.get("dueDate")?.toString() || undefined;
+  const isPrivate = formData.get("isPrivate") === "true";
 
   const validated = createTaskSchema.safeParse({
     title,
@@ -55,6 +56,7 @@ export async function createTaskAction(
     assigneeId: rawAssigneeIds[0] || undefined,
     assigneeIds: rawAssigneeIds.length > 0 ? rawAssigneeIds : undefined,
     dueDate: dueDate || undefined,
+    isPrivate,
   });
 
   if (!validated.success) {
@@ -151,6 +153,7 @@ export async function createTaskAction(
       priority: validated.data.priority,
       assignee_id: primaryAssigneeId,
       due_date: validated.data.dueDate || null,
+      is_private: Boolean(validated.data.isPrivate),
       created_by: user.id,
     })
     .select()

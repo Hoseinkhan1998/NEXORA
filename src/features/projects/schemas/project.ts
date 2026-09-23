@@ -29,6 +29,7 @@ export const createProjectSchema = z.object({
     .regex(/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/, { message: "Invalid color format" })
     .optional()
     .or(z.literal("")),
+  memberIds: z.array(z.string().uuid()).optional(),
 });
 
 export type CreateProjectSchemaInput = z.infer<typeof createProjectSchema>;
@@ -53,6 +54,7 @@ export const updateProjectSchema = z.object({
     .nullable()
     .optional(),
   status: z.enum(["active", "archived"]).optional(),
+  memberIds: z.array(z.string().uuid()).optional(),
 });
 
 export type UpdateProjectSchemaInput = z.infer<typeof updateProjectSchema>;
