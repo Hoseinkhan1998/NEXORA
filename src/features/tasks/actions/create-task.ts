@@ -191,6 +191,7 @@ export async function createTaskAction(
       assignee_id: newTask.assignee_id,
       assignee_ids: targetAssigneeIds,
       due_date: newTask.due_date,
+      is_private: newTask.is_private,
     },
   });
 

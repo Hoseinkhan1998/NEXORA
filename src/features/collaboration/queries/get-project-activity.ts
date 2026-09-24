@@ -54,9 +54,25 @@ export async function getProjectActivities(
     return [];
   }
 
-  return data.map((item) => {
-    // Supabase can return joined relation as single object or array
-    const rawActor = Array.isArray(item.actor) ? item.actor[0] : item.actor;
+  return data
+    .filter((item) => {
+      if (item.entity_type === "task") {
+        const meta = (item.metadata || {}) as Record<string, unknown>;
+        if (meta.is_private === true) {
+          const isActor = item.actor_id === user.id;
+          const isAssignee = meta.assignee_id === user.id;
+          const isMultiAssignee =
+            Array.isArray(meta.assignee_ids) && meta.assignee_ids.includes(user.id);
+          if (!isActor && !isAssignee && !isMultiAssignee) {
+            return false;
+          }
+        }
+      }
+      return true;
+    })
+    .map((item) => {
+      // Supabase can return joined relation as single object or array
+      const rawActor = Array.isArray(item.actor) ? item.actor[0] : item.actor;
     return {
       id: item.id,
       workspace_id: item.workspace_id,

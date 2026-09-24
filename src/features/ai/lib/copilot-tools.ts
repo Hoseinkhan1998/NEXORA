@@ -154,6 +154,15 @@ export const COPILOT_TOOLS: OpenAI.Chat.Completions.ChatCompletionTool[] = [
             type: "string",
             description: "Due date in YYYY-MM-DD format, e.g. '2026-10-15'.",
           },
+          isPrivate: {
+            type: "boolean",
+            description:
+              "Set to true if this task is confidential and private. Visible only to creator and assignees.",
+          },
+          assigneeNameOrEmail: {
+            type: "string",
+            description: "Optional full name, email, or user ID of the team member to assign this task to.",
+          },
         },
         required: ["title"],
       },
@@ -164,7 +173,7 @@ export const COPILOT_TOOLS: OpenAI.Chat.Completions.ChatCompletionTool[] = [
     function: {
       name: "update_task",
       description:
-        "Updates details of an existing task including its title, description, priority, status, or due date.",
+        "Updates details of an existing task including its title, description, priority, status, due date, or privacy.",
       parameters: {
         type: "object",
         properties: {
@@ -194,8 +203,37 @@ export const COPILOT_TOOLS: OpenAI.Chat.Completions.ChatCompletionTool[] = [
             type: "string",
             description: "New due date in YYYY-MM-DD format.",
           },
+          isPrivate: {
+            type: "boolean",
+            description: "Set to true to make confidential/private, or false for public to project.",
+          },
+          assigneeNameOrEmail: {
+            type: "string",
+            description: "Name or email of team member to assign or reassign.",
+          },
         },
         required: ["taskIdOrTitle"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "assign_task",
+      description: "Assigns a task to a workspace member by matching their name, email, or user ID.",
+      parameters: {
+        type: "object",
+        properties: {
+          taskIdOrTitle: {
+            type: "string",
+            description: "The UUID or title of the task to assign.",
+          },
+          memberNameOrEmail: {
+            type: "string",
+            description: "Full name, email, or user ID of the member to assign.",
+          },
+        },
+        required: ["taskIdOrTitle", "memberNameOrEmail"],
       },
     },
   },
@@ -226,7 +264,8 @@ export const COPILOT_TOOLS: OpenAI.Chat.Completions.ChatCompletionTool[] = [
     type: "function",
     function: {
       name: "delete_task",
-      description: "Permanently deletes a task. Requires workspace owner or admin permissions.",
+      description:
+        "Permanently deletes a task. Workspace owners and administrators can delete any task. Standard members can delete tasks they created.",
       parameters: {
         type: "object",
         properties: {
@@ -269,6 +308,84 @@ export const COPILOT_TOOLS: OpenAI.Chat.Completions.ChatCompletionTool[] = [
             description: "Filter by status column.",
           },
         },
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "list_workspace_members",
+      description:
+        "Lists all members of the workspace along with their roles (owner, admin, member, viewer), full names, and emails.",
+      parameters: {
+        type: "object",
+        properties: {},
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "add_project_member",
+      description:
+        "Adds a workspace member to a specific project. Requires workspace owner/admin or project lead permissions.",
+      parameters: {
+        type: "object",
+        properties: {
+          projectIdOrName: {
+            type: "string",
+            description: "The project UUID or project name.",
+          },
+          memberNameOrEmail: {
+            type: "string",
+            description: "Name or email of the workspace member to add to the project.",
+          },
+          role: {
+            type: "string",
+            enum: ["member", "lead"],
+            description: "Role within project: 'member' or 'lead'. Defaults to 'member'.",
+          },
+        },
+        required: ["projectIdOrName", "memberNameOrEmail"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "remove_project_member",
+      description:
+        "Removes a member from a project. Requires workspace owner/admin or project lead permissions.",
+      parameters: {
+        type: "object",
+        properties: {
+          projectIdOrName: {
+            type: "string",
+            description: "The project UUID or project name.",
+          },
+          memberNameOrEmail: {
+            type: "string",
+            description: "Name or email of the project member to remove.",
+          },
+        },
+        required: ["projectIdOrName", "memberNameOrEmail"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "list_project_members",
+      description: "Lists all members assigned to a specific project.",
+      parameters: {
+        type: "object",
+        properties: {
+          projectIdOrName: {
+            type: "string",
+            description: "The project UUID or project name.",
+          },
+        },
+        required: ["projectIdOrName"],
       },
     },
   },
@@ -347,7 +464,7 @@ async function resolveTask(supabase: SupabaseClient, workspaceId: string, identi
   if (isUuid) {
     const { data } = await supabase
       .from("tasks")
-      .select("id, project_id, title, status, priority, description, due_date")
+      .select("id, project_id, title, status, priority, description, due_date, created_by")
       .eq("id", trimmed)
       .eq("workspace_id", workspaceId)
       .maybeSingle();
@@ -357,7 +474,7 @@ async function resolveTask(supabase: SupabaseClient, workspaceId: string, identi
   // Retrieve tasks in this workspace
   const { data: list } = await supabase
     .from("tasks")
-    .select("id, project_id, title, status, priority, description, due_date")
+    .select("id, project_id, title, status, priority, description, due_date, created_by")
     .eq("workspace_id", workspaceId)
     .order("created_at", { ascending: false })
     .limit(100);
@@ -370,6 +487,58 @@ async function resolveTask(supabase: SupabaseClient, workspaceId: string, identi
 
   const contains = list.find((t) => t.title.toLowerCase().includes(lower));
   return contains || null;
+}
+
+/**
+ * Resolves a workspace member by UUID, exact email, or substring name.
+ */
+async function resolveWorkspaceMember(
+  supabase: SupabaseClient,
+  workspaceId: string,
+  identifier: string
+) {
+  const trimmed = identifier.trim();
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(trimmed);
+
+  const { data: members } = await supabase
+    .from("workspace_members")
+    .select(
+      `
+      user_id,
+      role,
+      profile:profiles (
+        id,
+        email,
+        full_name
+      )
+    `
+    )
+    .eq("workspace_id", workspaceId);
+
+  if (!members || members.length === 0) return null;
+
+  if (isUuid) {
+    const match = members.find((m) => m.user_id === trimmed);
+    if (match) return match;
+  }
+
+  const lower = trimmed.toLowerCase();
+  // Exact email match
+  const emailMatch = members.find((m) => {
+    const prof = Array.isArray(m.profile) ? m.profile[0] : m.profile;
+    return prof?.email?.toLowerCase() === lower;
+  });
+  if (emailMatch) return emailMatch;
+
+  // Partial name / email match
+  const nameMatch = members.find((m) => {
+    const prof = Array.isArray(m.profile) ? m.profile[0] : m.profile;
+    return (
+      prof?.full_name?.toLowerCase().includes(lower) ||
+      prof?.email?.toLowerCase().includes(lower)
+    );
+  });
+  return nameMatch || null;
 }
 
 /**
@@ -389,8 +558,11 @@ export async function executeCopilotTool(
     "archive_project",
     "create_task",
     "update_task",
+    "assign_task",
     "move_task_status",
     "delete_task",
+    "add_project_member",
+    "remove_project_member",
   ];
 
   if (mutationTools.includes(toolName) && role === "viewer") {
@@ -598,6 +770,25 @@ export async function executeCopilotTool(
 
         const description = args.description ? String(args.description).trim() : null;
         const dueDate = args.dueDate ? String(args.dueDate).trim() : null;
+        const isPrivate = Boolean(args.isPrivate);
+
+        let assigneeId: string | null = null;
+        let assigneeName: string | null = null;
+
+        if (args.assigneeNameOrEmail) {
+          const matchedMember = await resolveWorkspaceMember(
+            supabase,
+            workspaceId,
+            String(args.assigneeNameOrEmail)
+          );
+          if (matchedMember) {
+            assigneeId = matchedMember.user_id;
+            const prof = Array.isArray(matchedMember.profile)
+              ? matchedMember.profile[0]
+              : matchedMember.profile;
+            assigneeName = prof?.full_name || prof?.email;
+          }
+        }
 
         const { data: newTask, error } = await supabase
           .from("tasks")
@@ -609,6 +800,8 @@ export async function executeCopilotTool(
             status,
             priority,
             due_date: dueDate,
+            is_private: isPrivate,
+            assignee_id: assigneeId,
             created_by: userId,
           })
           .select()
@@ -622,6 +815,15 @@ export async function executeCopilotTool(
           };
         }
 
+        if (assigneeId) {
+          await supabase
+            .from("task_assignees")
+            .upsert(
+              { task_id: newTask.id, user_id: assigneeId },
+              { onConflict: "task_id,user_id" }
+            );
+        }
+
         await recordToolActivity(supabase, {
           workspaceId,
           projectId: project.id,
@@ -632,13 +834,15 @@ export async function executeCopilotTool(
           metadata: {
             task_title: newTask.title,
             status: newTask.status,
+            is_private: isPrivate,
+            assignee_id: assigneeId,
             trigger: "ai_copilot",
           },
         });
 
         return {
           success: true,
-          message: `Task "${newTask.title}" created successfully in status [${newTask.status}] under project "${project.name}".`,
+          message: `Task "${newTask.title}" created successfully in status [${newTask.status}] under project "${project.name}"${assigneeName ? ` and assigned to ${assigneeName}` : ""}${isPrivate ? " (Confidential/Private)" : ""}.`,
           data: newTask,
           isMutation: true,
         };
@@ -674,6 +878,31 @@ export async function executeCopilotTool(
         }
         if (args.dueDate !== undefined)
           updateData.due_date = args.dueDate ? String(args.dueDate).trim() : null;
+        if (args.isPrivate !== undefined)
+          updateData.is_private = Boolean(args.isPrivate);
+
+        let newAssigneeName: string | null = null;
+        if (args.assigneeNameOrEmail) {
+          const matchedMember = await resolveWorkspaceMember(
+            supabase,
+            workspaceId,
+            String(args.assigneeNameOrEmail)
+          );
+          if (matchedMember) {
+            updateData.assignee_id = matchedMember.user_id;
+            const prof = Array.isArray(matchedMember.profile)
+              ? matchedMember.profile[0]
+              : matchedMember.profile;
+            newAssigneeName = prof?.full_name || prof?.email;
+
+            await supabase
+              .from("task_assignees")
+              .upsert(
+                { task_id: task.id, user_id: matchedMember.user_id },
+                { onConflict: "task_id,user_id" }
+              );
+          }
+        }
 
         const { data: updatedTask, error } = await supabase
           .from("tasks")
@@ -698,12 +927,89 @@ export async function executeCopilotTool(
           entityType: "task",
           entityId: updatedTask.id,
           action: "task_updated",
-          metadata: { task_title: updatedTask.title, trigger: "ai_copilot" },
+          metadata: {
+            task_title: updatedTask.title,
+            is_private: updatedTask.is_private,
+            trigger: "ai_copilot",
+          },
         });
 
         return {
           success: true,
-          message: `Task "${updatedTask.title}" updated successfully.`,
+          message: `Task "${updatedTask.title}" updated successfully.${newAssigneeName ? ` Assigned to ${newAssigneeName}.` : ""}${args.isPrivate !== undefined ? ` Confidentiality: ${args.isPrivate ? "Private" : "Public"}.` : ""}`,
+          data: updatedTask,
+          isMutation: true,
+        };
+      }
+
+      case "assign_task": {
+        const identifier = String(args.taskIdOrTitle || "").trim();
+        const memberQuery = String(args.memberNameOrEmail || "").trim();
+
+        const task = await resolveTask(supabase, workspaceId, identifier);
+        if (!task) {
+          return {
+            success: false,
+            message: `Task with title or ID "${identifier}" not found.`,
+            isMutation: false,
+          };
+        }
+
+        const member = await resolveWorkspaceMember(supabase, workspaceId, memberQuery);
+        if (!member) {
+          return {
+            success: false,
+            message: `Workspace member matching "${memberQuery}" was not found.`,
+            isMutation: false,
+          };
+        }
+
+        const { data: updatedTask, error } = await supabase
+          .from("tasks")
+          .update({ assignee_id: member.user_id })
+          .eq("id", task.id)
+          .eq("workspace_id", workspaceId)
+          .select()
+          .single();
+
+        if (error || !updatedTask) {
+          return {
+            success: false,
+            message: `Failed to assign task: ${error?.message}`,
+            isMutation: false,
+          };
+        }
+
+        await supabase
+          .from("task_assignees")
+          .upsert(
+            { task_id: task.id, user_id: member.user_id },
+            { onConflict: "task_id,user_id" }
+          );
+
+        const memberName = Array.isArray(member.profile)
+          ? member.profile[0]?.full_name || member.profile[0]?.email
+          : (member.profile as any)?.full_name || (member.profile as any)?.email;
+
+        await recordToolActivity(supabase, {
+          workspaceId,
+          projectId: updatedTask.project_id,
+          actorId: userId,
+          entityType: "task",
+          entityId: updatedTask.id,
+          action: "task_assigned",
+          metadata: {
+            task_title: updatedTask.title,
+            new_assignee_id: member.user_id,
+            assignee_name: memberName,
+            is_private: updatedTask.is_private,
+            trigger: "ai_copilot",
+          },
+        });
+
+        return {
+          success: true,
+          message: `Task "${updatedTask.title}" successfully assigned to ${memberName || "member"}.`,
           data: updatedTask,
           isMutation: true,
         };
@@ -757,6 +1063,7 @@ export async function executeCopilotTool(
             task_title: movedTask.title,
             from_status: task.status,
             to_status: targetStatus,
+            is_private: movedTask.is_private,
             trigger: "ai_copilot",
           },
         });
@@ -770,14 +1077,6 @@ export async function executeCopilotTool(
       }
 
       case "delete_task": {
-        if (role !== "owner" && role !== "admin") {
-          return {
-            success: false,
-            message: "Only workspace owners and administrators are permitted to delete tasks.",
-            isMutation: false,
-          };
-        }
-
         const identifier = String(args.taskIdOrTitle || "").trim();
         const task = await resolveTask(supabase, workspaceId, identifier);
 
@@ -785,6 +1084,18 @@ export async function executeCopilotTool(
           return {
             success: false,
             message: `Task with title or ID "${identifier}" not found.`,
+            isMutation: false,
+          };
+        }
+
+        const isPrivileged = role === "owner" || role === "admin";
+        const isCreator = (task as any).created_by === userId;
+
+        if (!isPrivileged && !isCreator) {
+          return {
+            success: false,
+            message:
+              "Only workspace owners and administrators are permitted to delete other members' tasks. Members can only delete tasks they personally created.",
             isMutation: false,
           };
         }
@@ -810,7 +1121,11 @@ export async function executeCopilotTool(
           entityType: "task",
           entityId: task.id,
           action: "task_deleted",
-          metadata: { task_title: task.title, trigger: "ai_copilot" },
+          metadata: {
+            task_title: task.title,
+            is_private: (task as any).is_private,
+            trigger: "ai_copilot",
+          },
         });
 
         return {
@@ -838,7 +1153,7 @@ export async function executeCopilotTool(
       case "list_tasks": {
         let query = supabase
           .from("tasks")
-          .select("id, title, status, priority, due_date, project:projects(name)")
+          .select("id, title, status, priority, due_date, is_private, project:projects(name)")
           .eq("workspace_id", workspaceId);
 
         if (args.projectNameOrId) {
@@ -858,6 +1173,239 @@ export async function executeCopilotTool(
           success: true,
           message: `Found ${tasks?.length || 0} tasks.`,
           data: tasks || [],
+          isMutation: false,
+        };
+      }
+
+      case "list_workspace_members": {
+        const { data: members, error } = await supabase
+          .from("workspace_members")
+          .select(
+            `
+            user_id,
+            role,
+            created_at,
+            profile:profiles (
+              id,
+              email,
+              full_name
+            )
+          `
+          )
+          .eq("workspace_id", workspaceId)
+          .order("role", { ascending: true });
+
+        if (error) {
+          return {
+            success: false,
+            message: `Failed to list workspace members: ${error.message}`,
+            isMutation: false,
+          };
+        }
+
+        const formatted = (members || []).map((m) => {
+          const prof = Array.isArray(m.profile) ? m.profile[0] : m.profile;
+          return {
+            userId: m.user_id,
+            role: m.role,
+            name: prof?.full_name || prof?.email?.split("@")[0] || "Member",
+            email: prof?.email || "",
+          };
+        });
+
+        return {
+          success: true,
+          message: `Workspace has ${formatted.length} members.`,
+          data: formatted,
+          isMutation: false,
+        };
+      }
+
+      case "add_project_member": {
+        const projectIdentifier = String(args.projectIdOrName || "").trim();
+        const memberQuery = String(args.memberNameOrEmail || "").trim();
+        const roleInProject = args.role === "lead" ? "lead" : "member";
+
+        const project = await resolveProject(supabase, workspaceId, projectIdentifier);
+        if (!project) {
+          return {
+            success: false,
+            message: `Project "${projectIdentifier}" not found.`,
+            isMutation: false,
+          };
+        }
+
+        const isWorkspacePrivileged = role === "owner" || role === "admin";
+        if (!isWorkspacePrivileged) {
+          const { data: leadCheck } = await supabase
+            .from("project_members")
+            .select("role")
+            .eq("project_id", project.id)
+            .eq("user_id", userId)
+            .eq("role", "lead")
+            .maybeSingle();
+
+          if (!leadCheck) {
+            return {
+              success: false,
+              message:
+                "Only workspace administrators or project leads can add members to projects.",
+              isMutation: false,
+            };
+          }
+        }
+
+        const member = await resolveWorkspaceMember(supabase, workspaceId, memberQuery);
+        if (!member) {
+          return {
+            success: false,
+            message: `Workspace member matching "${memberQuery}" not found.`,
+            isMutation: false,
+          };
+        }
+
+        const { error: insertErr } = await supabase.from("project_members").upsert(
+          {
+            project_id: project.id,
+            user_id: member.user_id,
+            role: roleInProject,
+          },
+          { onConflict: "project_id,user_id" }
+        );
+
+        if (insertErr) {
+          return {
+            success: false,
+            message: `Failed to add member to project: ${insertErr.message}`,
+            isMutation: false,
+          };
+        }
+
+        const prof = Array.isArray(member.profile) ? member.profile[0] : member.profile;
+        const memberName = prof?.full_name || prof?.email || "Member";
+
+        return {
+          success: true,
+          message: `${memberName} successfully added to project "${project.name}" as [${roleInProject}].`,
+          isMutation: true,
+        };
+      }
+
+      case "remove_project_member": {
+        const projectIdentifier = String(args.projectIdOrName || "").trim();
+        const memberQuery = String(args.memberNameOrEmail || "").trim();
+
+        const project = await resolveProject(supabase, workspaceId, projectIdentifier);
+        if (!project) {
+          return {
+            success: false,
+            message: `Project "${projectIdentifier}" not found.`,
+            isMutation: false,
+          };
+        }
+
+        const isWorkspacePrivileged = role === "owner" || role === "admin";
+        if (!isWorkspacePrivileged) {
+          const { data: leadCheck } = await supabase
+            .from("project_members")
+            .select("role")
+            .eq("project_id", project.id)
+            .eq("user_id", userId)
+            .eq("role", "lead")
+            .maybeSingle();
+
+          if (!leadCheck) {
+            return {
+              success: false,
+              message:
+                "Only workspace administrators or project leads can remove members from projects.",
+              isMutation: false,
+            };
+          }
+        }
+
+        const member = await resolveWorkspaceMember(supabase, workspaceId, memberQuery);
+        if (!member) {
+          return {
+            success: false,
+            message: `Workspace member matching "${memberQuery}" not found.`,
+            isMutation: false,
+          };
+        }
+
+        const { error: deleteErr } = await supabase
+          .from("project_members")
+          .delete()
+          .eq("project_id", project.id)
+          .eq("user_id", member.user_id);
+
+        if (deleteErr) {
+          return {
+            success: false,
+            message: `Failed to remove member: ${deleteErr.message}`,
+            isMutation: false,
+          };
+        }
+
+        const prof = Array.isArray(member.profile) ? member.profile[0] : member.profile;
+        const memberName = prof?.full_name || prof?.email || "Member";
+
+        return {
+          success: true,
+          message: `${memberName} removed from project "${project.name}".`,
+          isMutation: true,
+        };
+      }
+
+      case "list_project_members": {
+        const projectIdentifier = String(args.projectIdOrName || "").trim();
+        const project = await resolveProject(supabase, workspaceId, projectIdentifier);
+        if (!project) {
+          return {
+            success: false,
+            message: `Project "${projectIdentifier}" not found.`,
+            isMutation: false,
+          };
+        }
+
+        const { data: members, error } = await supabase
+          .from("project_members")
+          .select(
+            `
+            user_id,
+            role,
+            created_at,
+            profile:profiles (
+              id,
+              email,
+              full_name
+            )
+          `
+          )
+          .eq("project_id", project.id);
+
+        if (error) {
+          return {
+            success: false,
+            message: `Failed to query project members: ${error.message}`,
+            isMutation: false,
+          };
+        }
+
+        const formatted = (members || []).map((m) => {
+          const prof = Array.isArray(m.profile) ? m.profile[0] : m.profile;
+          return {
+            userId: m.user_id,
+            role: m.role,
+            name: prof?.full_name || prof?.email?.split("@")[0] || "Member",
+            email: prof?.email || "",
+          };
+        });
+
+        return {
+          success: true,
+          message: `Project "${project.name}" has ${formatted.length} members.`,
+          data: formatted,
           isMutation: false,
         };
       }

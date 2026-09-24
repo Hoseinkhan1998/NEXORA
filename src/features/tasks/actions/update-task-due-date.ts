@@ -55,7 +55,7 @@ export async function updateTaskDueDateAction(
   // 2. Fetch current task to verify existence and check permissions
   const { data: task, error: taskError } = await supabase
     .from("tasks")
-    .select("id, title, due_date, created_by, project_id, workspace_id")
+    .select("id, title, due_date, created_by, project_id, workspace_id, is_private")
     .eq("id", taskId)
     .eq("workspace_id", workspaceId)
     .single();
@@ -116,6 +116,7 @@ export async function updateTaskDueDateAction(
         task_title: task.title,
         old_due_date: task.due_date || undefined,
         new_due_date: dueDate || undefined,
+        is_private: task.is_private,
       },
     });
   } catch (err) {

@@ -132,9 +132,16 @@ export default async function ProjectDetailPage({ params, searchParams }: Projec
               )}
             </Badge>
           </div>
-          <p className="text-xs text-muted-foreground font-mono">
-            Scoped Slug: <span className="text-foreground font-semibold">/{project.slug}</span>
-          </p>
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <span>Workspace:</span>
+            <span className="font-semibold text-foreground">{workspace.name}</span>
+            {project.description && (
+              <>
+                <span className="text-border">•</span>
+                <span className="text-muted-foreground truncate max-w-[340px]">{project.description}</span>
+              </>
+            )}
+          </div>
         </div>
 
         {/* Real-time Collaboration Controls: Presence & Activity */}
@@ -166,57 +173,55 @@ export default async function ProjectDetailPage({ params, searchParams }: Projec
         </div>
       </div>
 
-      {/* 1. Project Metadata Top Row */}
-      <div className="grid gap-6 md:grid-cols-3">
-        {/* Left Column (2 cols): Overview & Description */}
-        <div className="md:col-span-2">
-          <Card className="shadow-xs h-full flex flex-col justify-between">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base font-semibold">Project Overview</CardTitle>
+      {/* 1. Project Views Section (List, Kanban, Table, Calendar, Timeline) */}
+      <div>
+        <ProjectViewContent
+          initialView={initialView}
+          tasks={tasks}
+          workspaceId={workspace.id}
+          projectId={project.id}
+          workspaceSlug={workspace.slug}
+          assignees={assignees}
+          userRole={workspace.role}
+          currentUserId={user?.id}
+        />
+      </div>
+
+      {/* 2. Embedded Activity & Initiative Metadata (2/3 and 1/3 Grid) */}
+      <div className="grid gap-6 lg:grid-cols-3 pt-2">
+        {/* Left Column (2/3 width): Recent Project Activity */}
+        <div className="lg:col-span-2">
+          <Card className="shadow-xs h-full flex flex-col">
+            <CardHeader className="pb-3 border-b border-border/40">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                  <History className="h-4 w-4 text-primary" />
+                  <span>Recent Project Activity</span>
+                </CardTitle>
+                <Badge variant="outline" className="text-[10px] font-mono text-muted-foreground">
+                  Live Stream
+                </Badge>
+              </div>
               <CardDescription className="text-xs">
-                Key objective and scope for this initiative.
+                Real-time audit stream of task transitions, reassignments, and team updates.
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4 text-sm flex-1 flex flex-col justify-between">
-              <div className="rounded-lg bg-muted/30 border border-border/40 p-4 flex-1">
-                <p className="text-sm leading-relaxed text-foreground whitespace-pre-wrap">
-                  {project.description || (
-                    <span className="text-muted-foreground italic">
-                      No description provided for this project.
-                    </span>
-                  )}
-                </p>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4 pt-2 text-xs border-t border-border/30">
-                <div className="space-y-1">
-                  <span className="text-muted-foreground">Workspace</span>
-                  <p className="font-semibold text-foreground truncate">{workspace.name}</p>
-                </div>
-                <div className="space-y-1">
-                  <span className="text-muted-foreground">Color Theme</span>
-                  <div className="flex items-center gap-2">
-                    <span
-                      className="h-3 w-3 rounded-full"
-                      style={{ backgroundColor: projectColor }}
-                    />
-                    <span className="font-mono text-foreground font-medium uppercase">
-                      {projectColor}
-                    </span>
-                  </div>
-                </div>
+            <CardContent className="pt-4 flex-1">
+              <div className="max-h-[300px] overflow-y-auto scrollbar-thin pr-1">
+                <ActivityFeed projectId={project.id} initialActivities={initialActivities} />
               </div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Right Column (1 col): Metadata & Tenant Scoping */}
-        <div className="md:col-span-1">
+        {/* Right Column (1/3 width): Initiative Metadata */}
+        <div className="lg:col-span-1">
           <Card className="shadow-xs h-full flex flex-col justify-between">
-            <CardHeader className="pb-3">
+            <CardHeader className="pb-3 border-b border-border/40">
               <CardTitle className="text-sm font-semibold">Initiative Metadata</CardTitle>
+              <CardDescription className="text-xs">Project attributes and governance</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-3.5 text-xs">
+            <CardContent className="space-y-3.5 text-xs pt-4">
               <div className="flex items-center justify-between py-1 border-b border-border/40">
                 <span className="text-muted-foreground flex items-center gap-1.5">
                   <User className="h-3.5 w-3.5" />
@@ -249,11 +254,17 @@ export default async function ProjectDetailPage({ params, searchParams }: Projec
               <div className="flex items-center justify-between py-1 border-b border-border/40">
                 <span className="text-muted-foreground flex items-center gap-1.5">
                   <FolderKanban className="h-3.5 w-3.5 text-muted-foreground" />
-                  Tenant Scoping
+                  Color Theme
                 </span>
-                <span className="font-mono text-[11px] text-foreground font-semibold">
-                  /{workspace.slug}
-                </span>
+                <div className="flex items-center gap-1.5">
+                  <span
+                    className="h-2.5 w-2.5 rounded-full"
+                    style={{ backgroundColor: projectColor }}
+                  />
+                  <span className="font-mono text-foreground font-medium uppercase text-[11px]">
+                    {projectColor}
+                  </span>
+                </div>
               </div>
 
               <div className="flex items-center justify-between py-1">
@@ -267,43 +278,6 @@ export default async function ProjectDetailPage({ params, searchParams }: Projec
           </Card>
         </div>
       </div>
-
-      {/* 2. Project Views Section (List, Kanban, Table, Calendar, Timeline) */}
-      <div className="pt-2">
-        <ProjectViewContent
-          initialView={initialView}
-          tasks={tasks}
-          workspaceId={workspace.id}
-          projectId={project.id}
-          workspaceSlug={workspace.slug}
-          assignees={assignees}
-          userRole={workspace.role}
-          currentUserId={user?.id}
-        />
-      </div>
-
-      {/* 3. Full-Width Embedded Project Activity Audit Log */}
-      <Card className="shadow-xs">
-        <CardHeader className="pb-3 border-b border-border/40">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-sm font-semibold flex items-center gap-2">
-              <History className="h-4 w-4 text-primary" />
-              <span>Recent Project Activity</span>
-            </CardTitle>
-            <Badge variant="outline" className="text-[10px] font-mono text-muted-foreground">
-              Live Stream
-            </Badge>
-          </div>
-          <CardDescription className="text-xs">
-            Real-time audit stream of task transitions, reassignments, and team updates.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="pt-4">
-          <div className="max-h-[300px] overflow-y-auto scrollbar-thin pr-1">
-            <ActivityFeed projectId={project.id} initialActivities={initialActivities} />
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 }

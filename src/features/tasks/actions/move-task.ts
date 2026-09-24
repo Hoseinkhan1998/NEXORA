@@ -76,7 +76,7 @@ export async function moveTaskAction(
   // 5. Verify task exists, belongs to this project & workspace
   const { data: existingTask, error: taskCheckError } = await supabase
     .from("tasks")
-    .select("id, title, status, position, assignee_id")
+    .select("id, title, status, position, assignee_id, is_private")
     .eq("id", taskId)
     .eq("project_id", projectId)
     .eq("workspace_id", workspaceId)
@@ -124,6 +124,7 @@ export async function moveTaskAction(
         old_status: existingTask.status,
         new_status: status,
         position,
+        is_private: existingTask.is_private,
       },
     });
 
@@ -153,6 +154,7 @@ export async function moveTaskAction(
         task_title: existingTask.title,
         new_status: status,
         position,
+        is_private: existingTask.is_private,
       },
     });
   }

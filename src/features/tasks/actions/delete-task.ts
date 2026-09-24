@@ -47,7 +47,7 @@ export async function deleteTaskAction(
   // Query task title for activity audit narrative
   const { data: existingTask } = await supabase
     .from("tasks")
-    .select("title")
+    .select("title, is_private")
     .eq("id", taskId)
     .eq("project_id", projectId)
     .eq("workspace_id", workspaceId)
@@ -78,6 +78,7 @@ export async function deleteTaskAction(
     action: "task_deleted",
     metadata: {
       task_title: existingTask?.title || "a task",
+      is_private: existingTask?.is_private,
     },
   });
 

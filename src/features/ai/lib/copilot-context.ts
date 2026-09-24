@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import type {
   CopilotContextActivity,
+  CopilotContextMember,
   CopilotContextProject,
   CopilotContextTask,
   WorkspaceContextData,
@@ -132,6 +133,37 @@ export async function getWorkspaceCopilotContext(
     };
   });
 
+  // 4. Fetch team members (limit 30)
+  const { data: membersData, error: membersError } = await supabase
+    .from("workspace_members")
+    .select(
+      `
+      user_id,
+      role,
+      profile:profiles (
+        id,
+        email,
+        full_name
+      )
+    `
+    )
+    .eq("workspace_id", workspaceId)
+    .limit(30);
+
+  if (membersError) {
+    console.error("[copilot-context] Error loading members:", membersError);
+  }
+
+  const members: CopilotContextMember[] = (membersData || []).map((m) => {
+    const prof = Array.isArray(m.profile) ? m.profile[0] : m.profile;
+    return {
+      id: m.user_id,
+      name: prof?.full_name || prof?.email?.split("@")[0] || "Member",
+      email: prof?.email || "",
+      role: m.role,
+    };
+  });
+
   return {
     workspace: {
       id: workspaceId,
@@ -141,6 +173,7 @@ export async function getWorkspaceCopilotContext(
     projects,
     tasks,
     recentActivities,
+    members,
   };
 }
 
@@ -148,7 +181,7 @@ export async function getWorkspaceCopilotContext(
  * Serializes workspace context data into a safe, bounded markdown/XML string for the system prompt.
  */
 export function formatWorkspaceContextString(data: WorkspaceContextData): string {
-  const { workspace, projects, tasks, recentActivities } = data;
+  const { workspace, projects, tasks, recentActivities, members } = data;
 
   const projectLines =
     projects.length > 0
@@ -180,9 +213,22 @@ export function formatWorkspaceContextString(data: WorkspaceContextData): string
           .join("\n")
       : "No recent activity recorded.";
 
+  const memberLines =
+    members && members.length > 0
+      ? members
+          .map(
+            (m) =>
+              `- ${m.name} (${m.email}) [Role: ${m.role}, UserID: ${m.id}]`
+          )
+          .join("\n")
+      : "No member roster details.";
+
   return `
 <workspace_context>
 Workspace: ${workspace.name} (/${workspace.slug})
+
+Team Members (${members?.length || 0} members):
+${memberLines}
 
 Projects (${projects.length} accessible):
 ${projectLines}

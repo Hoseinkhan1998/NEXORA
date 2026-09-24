@@ -37,6 +37,24 @@ export function useProjectActivity({ projectId, initialActivities }: UseProjectA
         },
         async (payload) => {
           const raw = payload.new as Record<string, unknown>;
+          const meta = (raw.metadata || {}) as Record<string, unknown>;
+
+          // Confidentiality guard: ignore private task events if not actor or assignee
+          if (raw.entity_type === "task" && meta.is_private === true) {
+            const { data: authData } = await supabase.auth.getUser();
+            const currentUserId = authData?.user?.id;
+            const isActor = Boolean(currentUserId && raw.actor_id === currentUserId);
+            const isAssignee = Boolean(currentUserId && meta.assignee_id === currentUserId);
+            const isMulti = Boolean(
+              currentUserId &&
+                Array.isArray(meta.assignee_ids) &&
+                meta.assignee_ids.includes(currentUserId)
+            );
+
+            if (!isActor && !isAssignee && !isMulti) {
+              return;
+            }
+          }
 
           // Fetch actor profile for live activity
           let actor = {

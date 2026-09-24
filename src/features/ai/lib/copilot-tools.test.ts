@@ -12,9 +12,14 @@ describe("NEXORA AI Copilot - Tools & Guardrails", () => {
     expect(toolNames).toContain("create_task");
     expect(toolNames).toContain("update_task");
     expect(toolNames).toContain("move_task_status");
+    expect(toolNames).toContain("assign_task");
     expect(toolNames).toContain("delete_task");
     expect(toolNames).toContain("list_projects");
     expect(toolNames).toContain("list_tasks");
+    expect(toolNames).toContain("list_workspace_members");
+    expect(toolNames).toContain("add_project_member");
+    expect(toolNames).toContain("remove_project_member");
+    expect(toolNames).toContain("list_project_members");
   });
 
   it("strictly enforces guardrails: NO tools exist for profiles, passwords, avatars, or billing", () => {
@@ -47,12 +52,31 @@ describe("NEXORA AI Copilot - Tools & Guardrails", () => {
       expect(result.message).toContain("Viewer");
     });
 
-    it("prevents standard members from deleting tasks", async () => {
+    it("prevents standard members from deleting tasks created by others", async () => {
+      const mockSb = {
+        from: vi.fn().mockImplementation((table: string) => {
+          if (table === "tasks") {
+            return {
+              select: vi.fn().mockReturnThis(),
+              eq: vi.fn().mockReturnThis(),
+              order: vi.fn().mockReturnThis(),
+              limit: vi.fn().mockResolvedValue({
+                data: [{ id: "t-1", title: "تسک دیگران", created_by: "usr-other" }],
+              }),
+              maybeSingle: vi.fn().mockResolvedValue({
+                data: { id: "t-1", title: "تسک دیگران", created_by: "usr-other" },
+              }),
+            };
+          }
+          return {};
+        }),
+      } as unknown as SupabaseClient;
+
       const result = await executeCopilotTool(
         "delete_task",
-        { taskIdOrTitle: "task-1" },
+        { taskIdOrTitle: "تسک دیگران" },
         {
-          supabase: fakeSupabase,
+          supabase: mockSb,
           workspaceId: "ws-123",
           workspaceSlug: "test-ws",
           userId: "usr-1",
@@ -61,7 +85,50 @@ describe("NEXORA AI Copilot - Tools & Guardrails", () => {
       );
 
       expect(result.success).toBe(false);
-      expect(result.message).toContain("Only workspace owners and administrators");
+      expect(result.message).toContain("Only workspace owners and administrators are permitted to delete other members' tasks");
+    });
+
+    it("allows standard members to delete tasks they created", async () => {
+      const mockSb = {
+        from: vi.fn().mockImplementation((table: string) => {
+          if (table === "tasks") {
+            return {
+              select: vi.fn().mockReturnThis(),
+              eq: vi.fn().mockReturnThis(),
+              order: vi.fn().mockReturnThis(),
+              limit: vi.fn().mockResolvedValue({
+                data: [{ id: "t-1", title: "تسک خودم", created_by: "usr-1" }],
+              }),
+              maybeSingle: vi.fn().mockResolvedValue({
+                data: { id: "t-1", title: "تسک خودم", created_by: "usr-1" },
+              }),
+              delete: vi.fn().mockReturnThis(),
+            };
+          }
+          if (table === "project_activity") {
+            return {
+              insert: vi.fn().mockResolvedValue({ error: null }),
+            };
+          }
+          return {};
+        }),
+      } as unknown as SupabaseClient;
+
+      const result = await executeCopilotTool(
+        "delete_task",
+        { taskIdOrTitle: "تسک خودم" },
+        {
+          supabase: mockSb,
+          workspaceId: "ws-123",
+          workspaceSlug: "test-ws",
+          userId: "usr-1",
+          role: "member",
+        }
+      );
+
+      expect(result.success).toBe(true);
+      expect(result.isMutation).toBe(true);
+      expect(result.message).toContain("deleted successfully");
     });
   });
 

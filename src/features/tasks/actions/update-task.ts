@@ -204,6 +204,7 @@ export async function updateTaskAction(
           task_title: updatedTask.title,
           old_status: existingTask.status,
           new_status: updatedTask.status,
+          is_private: updatedTask.is_private,
         },
       });
     } else if (
@@ -221,6 +222,7 @@ export async function updateTaskAction(
           task_title: updatedTask.title,
           old_priority: existingTask.priority,
           new_priority: updatedTask.priority,
+          is_private: updatedTask.is_private,
         },
       });
     } else if (isAssigneeUpdating) {
@@ -236,6 +238,7 @@ export async function updateTaskAction(
           old_assignee_id: existingTask.assignee_id,
           new_assignee_id: updatedTask.assignee_id,
           assignee_ids: targetAssigneeIds,
+          is_private: updatedTask.is_private,
         },
       });
     } else if (
@@ -253,6 +256,7 @@ export async function updateTaskAction(
           task_title: updatedTask.title,
           old_due_date: existingTask.due_date,
           new_due_date: updatedTask.due_date,
+          is_private: updatedTask.is_private,
         },
       });
     } else {
@@ -265,6 +269,7 @@ export async function updateTaskAction(
         action: "task_updated",
         metadata: {
           task_title: updatedTask.title,
+          is_private: updatedTask.is_private,
         },
       });
     }

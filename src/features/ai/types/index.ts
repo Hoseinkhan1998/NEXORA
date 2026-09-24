@@ -40,6 +40,13 @@ export interface CopilotContextActivity {
   createdAt: string;
 }
 
+export interface CopilotContextMember {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+}
+
 export interface WorkspaceContextData {
   workspace: {
     id: string;
@@ -49,6 +56,7 @@ export interface WorkspaceContextData {
   projects: CopilotContextProject[];
   tasks: CopilotContextTask[];
   recentActivities: CopilotContextActivity[];
+  members?: CopilotContextMember[];
 }
 
 export interface CopilotResponseSuccess {
