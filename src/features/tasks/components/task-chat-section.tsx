@@ -340,10 +340,10 @@ export function TaskChatSection({
                       <button
                         type="button"
                         onClick={() => handleDeleteComment(comment.id)}
-                        className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 text-muted-foreground hover:text-destructive"
+                        className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity p-1 -my-0.5 text-muted-foreground/70 hover:text-destructive rounded-sm"
                         title="Delete message"
                       >
-                        <Trash2 className="h-3 w-3" />
+                        <Trash2 className="h-3.5 w-3.5 sm:h-3 sm:w-3" />
                       </button>
                     )}
                   </div>
