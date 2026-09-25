@@ -27,7 +27,8 @@ import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Plus, AlertCircle, Lock } from "lucide-react";
 import { createTaskAction } from "../actions/create-task";
 import { createTaskSchema } from "../schemas/task";
-import type { TaskStatus, TaskPriority, WorkspaceAssignee } from "../types";
+import { TaskAttachments } from "./task-attachments";
+import type { TaskStatus, TaskPriority, WorkspaceAssignee, TaskAttachment } from "../types";
 
 interface CreateTaskDialogProps {
   workspaceId: string;
@@ -53,6 +54,7 @@ export function CreateTaskDialog({
   const [selectedAssigneeIds, setSelectedAssigneeIds] = React.useState<string[]>([]);
   const [dueDate, setDueDate] = React.useState<string>("");
   const [isPrivate, setIsPrivate] = React.useState(false);
+  const [attachments, setAttachments] = React.useState<TaskAttachment[]>([]);
   const [errors, setErrors] = React.useState<Record<string, string>>({});
   const [generalError, setGeneralError] = React.useState<string | null>(null);
   const [isPending, setIsPending] = React.useState(false);
@@ -65,6 +67,7 @@ export function CreateTaskDialog({
     setSelectedAssigneeIds([]);
     setDueDate("");
     setIsPrivate(false);
+    setAttachments([]);
     setErrors({});
     setGeneralError(null);
     setIsPending(false);
@@ -90,6 +93,8 @@ export function CreateTaskDialog({
       assigneeId: selectedAssigneeIds[0] || undefined,
       assigneeIds: selectedAssigneeIds.length > 0 ? selectedAssigneeIds : undefined,
       dueDate: dueDate || undefined,
+      isPrivate,
+      attachments,
     });
 
     if (!validation.success) {
@@ -114,6 +119,9 @@ export function CreateTaskDialog({
       if (selectedAssigneeIds[0]) formData.set("assigneeId", selectedAssigneeIds[0]);
       if (dueDate) formData.set("dueDate", dueDate);
       formData.set("isPrivate", isPrivate ? "true" : "false");
+      if (attachments.length > 0) {
+        formData.set("attachments", JSON.stringify(attachments));
+      }
 
       const result = await createTaskAction(workspaceId, projectId, workspaceSlug, null, formData);
 
@@ -287,13 +295,21 @@ export function CreateTaskDialog({
               )}
             </div>
 
+            {/* Task-Level Attachments */}
+            <TaskAttachments
+              attachments={attachments}
+              onChange={setAttachments}
+              workspaceId={workspaceId}
+              isEditable={true}
+            />
+
             {/* Private Task Toggle */}
             <div className="flex items-start justify-between rounded-lg border border-border/60 bg-muted/20 p-3 gap-3">
               <div className="space-y-0.5">
                 <div className="flex items-center gap-1.5">
                   <Lock className="h-3.5 w-3.5 text-amber-500" />
                   <Label htmlFor="task-private" className="text-xs font-semibold cursor-pointer">
-                    Private Task (محرمانه / خصوصی)
+                    Private Task
                   </Label>
                 </div>
                 <p className="text-[11px] text-muted-foreground">

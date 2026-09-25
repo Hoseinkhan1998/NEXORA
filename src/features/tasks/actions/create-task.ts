@@ -47,6 +47,15 @@ export async function createTaskAction(
   }
   const dueDate = formData.get("dueDate")?.toString() || undefined;
   const isPrivate = formData.get("isPrivate") === "true";
+  const rawAttachments = formData.get("attachments")?.toString();
+  let parsedAttachments: unknown[] = [];
+  if (rawAttachments) {
+    try {
+      parsedAttachments = JSON.parse(rawAttachments);
+    } catch {
+      // ignore parse error
+    }
+  }
 
   const validated = createTaskSchema.safeParse({
     title,
@@ -57,6 +66,7 @@ export async function createTaskAction(
     assigneeIds: rawAssigneeIds.length > 0 ? rawAssigneeIds : undefined,
     dueDate: dueDate || undefined,
     isPrivate,
+    attachments: parsedAttachments,
   });
 
   if (!validated.success) {
@@ -154,6 +164,7 @@ export async function createTaskAction(
       assignee_id: primaryAssigneeId,
       due_date: validated.data.dueDate || null,
       is_private: Boolean(validated.data.isPrivate),
+      attachments: validated.data.attachments || [],
       created_by: user.id,
     })
     .select()

@@ -1,5 +1,15 @@
 import { z } from "zod";
 
+export const taskAttachmentSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  url: z.string(),
+  size: z.number().nonnegative(),
+  type: z.string(),
+  uploaded_at: z.string(),
+  uploaded_by: z.string().optional(),
+});
+
 export const createTaskSchema = z.object({
   title: z
     .string()
@@ -29,6 +39,7 @@ export const createTaskSchema = z.object({
     .or(z.literal("")),
   position: z.coerce.number().optional(),
   isPrivate: z.boolean().optional().default(false),
+  attachments: z.array(taskAttachmentSchema).optional().default([]),
 });
 
 export type CreateTaskSchemaInput = z.infer<typeof createTaskSchema>;
@@ -63,6 +74,7 @@ export const updateTaskSchema = z.object({
     .or(z.literal("")),
   position: z.coerce.number().optional(),
   isPrivate: z.boolean().optional(),
+  attachments: z.array(taskAttachmentSchema).optional(),
 });
 
 export type UpdateTaskSchemaInput = z.infer<typeof updateTaskSchema>;

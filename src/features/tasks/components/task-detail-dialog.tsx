@@ -43,7 +43,9 @@ import {
 import { updateTaskAction } from "../actions/update-task";
 import { deleteTaskAction } from "../actions/delete-task";
 import { updateTaskSchema } from "../schemas/task";
-import type { TaskWithDetails, TaskStatus, TaskPriority, WorkspaceAssignee } from "../types";
+import { TaskAttachments } from "./task-attachments";
+import { TaskChatSection } from "./task-chat-section";
+import type { TaskWithDetails, TaskStatus, TaskPriority, WorkspaceAssignee, TaskAttachment } from "../types";
 import type { WorkspaceRole } from "@/features/workspaces/types";
 
 export interface TaskDetailDialogProps {
@@ -97,6 +99,7 @@ export function TaskDetailDialog({
   );
   const [dueDate, setDueDate] = React.useState<string>(task.due_date || "");
   const [isPrivate, setIsPrivate] = React.useState(Boolean(task.is_private));
+  const [attachments, setAttachments] = React.useState<TaskAttachment[]>(task.attachments || []);
   const [errors, setErrors] = React.useState<Record<string, string>>({});
   const [generalError, setGeneralError] = React.useState<string | null>(null);
   const [isPending, setIsPending] = React.useState(false);
@@ -124,6 +127,7 @@ export function TaskDetailDialog({
     setSelectedAssigneeIds(getInitialAssigneeIds(task));
     setDueDate(task.due_date || "");
     setIsPrivate(Boolean(task.is_private));
+    setAttachments(task.attachments || []);
     setErrors({});
     setGeneralError(null);
     setMode("view");
@@ -151,6 +155,7 @@ export function TaskDetailDialog({
       assigneeIds: selectedAssigneeIds,
       dueDate: dueDate || null,
       isPrivate,
+      attachments,
     });
 
     if (!validation.success) {
@@ -237,7 +242,7 @@ export function TaskDetailDialog({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
 
-      <DialogContent className="sm:max-w-xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-2xl max-h-[92vh] overflow-y-auto">
         {mode === "view" ? (
           /* ============================================================
              1. VIEW MODE (Read Details)
@@ -401,17 +406,37 @@ export function TaskDetailDialog({
               </div>
             </div>
 
+            {/* Task-Level File Attachments */}
+            <div className="pt-2 border-t border-border/40">
+              <TaskAttachments
+                attachments={attachments}
+                workspaceId={workspaceId}
+                taskId={task.id}
+                isEditable={false}
+              />
+            </div>
+
             {/* Read-Only Notice for unauthorized members / viewers */}
             {!canEdit && (
               <div className="flex items-center gap-2 rounded-md bg-muted/40 p-2.5 text-[11px] text-muted-foreground border border-border/40">
                 <ShieldAlert className="h-4 w-4 text-amber-500 shrink-0" />
                 <span>
                   {userRole === "viewer"
-                    ? "Viewer Mode: Read-only access."
-                    : "Read-only: Only workspace admins, the task creator, or assigned members can edit this task."}
+                    ? "Viewer Mode: Read-only access to task properties. You can actively participate in the discussion below."
+                    : "Read-only: Only workspace admins, the task creator, or assigned members can edit this task. You can still participate in the discussion below."}
                 </span>
               </div>
             )}
+
+            {/* Real-time Task Comments & Discussion Feed */}
+            <div className="pt-2 border-t border-border/40">
+              <TaskChatSection
+                taskId={task.id}
+                workspaceId={workspaceId}
+                currentUserId={currentUserId}
+                currentUserRole={userRole}
+              />
+            </div>
           </div>
         ) : (
           /* ============================================================
@@ -551,13 +576,24 @@ export function TaskDetailDialog({
               />
             </div>
 
+            {/* Task-Level Attachments */}
+            <div className="pt-1">
+              <TaskAttachments
+                attachments={attachments}
+                onChange={setAttachments}
+                workspaceId={workspaceId}
+                taskId={task.id}
+                isEditable={true}
+              />
+            </div>
+
             {/* Private Task Toggle */}
             <div className="flex items-start justify-between rounded-lg border border-border/60 bg-muted/20 p-3 gap-3">
               <div className="space-y-0.5">
                 <div className="flex items-center gap-1.5">
                   <Lock className="h-3.5 w-3.5 text-amber-500" />
                   <Label htmlFor="task-edit-private" className="text-xs font-semibold cursor-pointer">
-                    Private Task (محرمانه / خصوصی)
+                    Private Task
                   </Label>
                 </div>
                 <p className="text-[11px] text-muted-foreground">

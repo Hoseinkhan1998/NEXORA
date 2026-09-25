@@ -126,6 +126,7 @@ export async function updateTaskAction(
   if (validated.data.dueDate !== undefined) updateData.due_date = validated.data.dueDate || null;
   if (validated.data.position !== undefined) updateData.position = validated.data.position;
   if (validated.data.isPrivate !== undefined) updateData.is_private = validated.data.isPrivate;
+  if (validated.data.attachments !== undefined) updateData.attachments = validated.data.attachments;
 
   const { data: updatedTask, error: updateError } = await supabase
     .from("tasks")

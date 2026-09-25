@@ -2,6 +2,16 @@ export type TaskStatus = "todo" | "in_progress" | "done";
 
 export type TaskPriority = "low" | "medium" | "high" | "urgent";
 
+export interface TaskAttachment {
+  id: string;
+  name: string;
+  url: string;
+  size: number;
+  type: string;
+  uploaded_at: string;
+  uploaded_by?: string;
+}
+
 export interface Task {
   id: string;
   workspace_id: string;
@@ -15,6 +25,7 @@ export interface Task {
   due_date: string | null;
   position: number;
   is_private?: boolean;
+  attachments?: TaskAttachment[];
   created_at: string;
   updated_at: string;
 }
@@ -36,6 +47,7 @@ export interface TaskWithDetails extends Task {
   assignee: TaskAssignee | null;
   assignees: TaskAssignee[];
   creator?: TaskCreator | null;
+  attachments?: TaskAttachment[];
 }
 
 export interface WorkspaceAssignee {
@@ -56,6 +68,7 @@ export interface CreateTaskInput {
   dueDate?: string | null;
   position?: number;
   isPrivate?: boolean;
+  attachments?: TaskAttachment[];
 }
 
 export interface UpdateTaskInput {
@@ -68,4 +81,8 @@ export interface UpdateTaskInput {
   dueDate?: string | null;
   position?: number;
   isPrivate?: boolean;
+  attachments?: TaskAttachment[];
 }
+
+export * from "./comment";
+

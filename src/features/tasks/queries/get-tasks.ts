@@ -25,6 +25,7 @@ const TASK_SELECT_WITH_MULTI_ASSIGNEES = `
   due_date,
   position,
   is_private,
+  attachments,
   created_at,
   updated_at,
   assignees_rel:task_assignees (
@@ -61,6 +62,7 @@ const TASK_SELECT_LEGACY = `
   due_date,
   position,
   is_private,
+  attachments,
   created_at,
   updated_at,
   assignee:profiles!tasks_assignee_id_fkey (
@@ -129,6 +131,7 @@ function mapTaskRow(item: any): TaskWithDetails {
     due_date: item.due_date,
     position: item.position,
     is_private: Boolean(item.is_private),
+    attachments: Array.isArray(item.attachments) ? item.attachments : [],
     created_at: item.created_at,
     updated_at: item.updated_at,
     assignee: primaryAssignee,
