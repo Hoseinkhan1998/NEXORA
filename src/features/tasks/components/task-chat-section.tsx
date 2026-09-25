@@ -535,12 +535,14 @@ export function TaskChatSection({
             data-confirm-dialog="true"
             role="dialog"
             aria-modal="true"
-            className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in-0 duration-150"
+            className="fixed inset-0 z-[9999] pointer-events-auto flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in-0 duration-150"
             onClick={() => setCommentToDelete(null)}
           >
             <div
-              className="w-full max-w-sm rounded-2xl bg-card p-5 border border-border/80 shadow-2xl space-y-4 animate-in zoom-in-95 duration-150"
+              className="w-full max-w-sm rounded-2xl bg-card p-5 border border-border/80 shadow-2xl space-y-4 animate-in zoom-in-95 duration-150 pointer-events-auto"
               onClick={(e) => e.stopPropagation()}
+              onPointerDown={(e) => e.stopPropagation()}
+              onMouseDown={(e) => e.stopPropagation()}
             >
               <div className="flex items-start gap-3.5">
                 <div className="p-2.5 rounded-full bg-destructive/10 text-destructive shrink-0 mt-0.5">
@@ -561,8 +563,11 @@ export function TaskChatSection({
                   type="button"
                   variant="outline"
                   size="sm"
-                  onClick={() => setCommentToDelete(null)}
-                  className="h-8 text-xs px-3 rounded-lg cursor-pointer"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setCommentToDelete(null);
+                  }}
+                  className="h-8 text-xs px-3 rounded-lg cursor-pointer pointer-events-auto"
                 >
                   Cancel
                 </Button>
@@ -570,12 +575,13 @@ export function TaskChatSection({
                   type="button"
                   variant="destructive"
                   size="sm"
-                  onClick={() => {
+                  onClick={(e) => {
+                    e.stopPropagation();
                     const id = commentToDelete;
                     setCommentToDelete(null);
                     handleDeleteComment(id);
                   }}
-                  className="h-8 text-xs px-3 rounded-lg font-medium cursor-pointer"
+                  className="h-8 text-xs px-3 rounded-lg font-medium cursor-pointer pointer-events-auto"
                 >
                   Delete
                 </Button>
