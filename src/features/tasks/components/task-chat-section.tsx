@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { createPortal } from "react-dom";
 import {
   Send,
   Paperclip,
@@ -93,6 +94,33 @@ export function TaskChatSection({
   // Lightbox modal state
   const [lightboxUrl, setLightboxUrl] = React.useState<string | null>(null);
   const [lightboxName, setLightboxName] = React.useState<string>("");
+
+  // Delete confirmation modal state
+  const [commentToDelete, setCommentToDelete] = React.useState<string | null>(null);
+  const [mounted, setMounted] = React.useState(false);
+
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Handle Escape key for delete confirmation modal
+  React.useEffect(() => {
+    if (!commentToDelete) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+        setCommentToDelete(null);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown, true);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown, true);
+    };
+  }, [commentToDelete]);
 
   const scrollToBottom = React.useCallback((behavior: ScrollBehavior = "smooth") => {
     messagesEndRef.current?.scrollIntoView({ behavior, block: "nearest" });
@@ -339,8 +367,8 @@ export function TaskChatSection({
                     {canDelete && (
                       <button
                         type="button"
-                        onClick={() => handleDeleteComment(comment.id)}
-                        className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity p-1 -my-0.5 text-muted-foreground/70 hover:text-destructive rounded-sm"
+                        onClick={() => setCommentToDelete(comment.id)}
+                        className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity p-1 -my-0.5 text-muted-foreground/70 hover:text-destructive rounded-sm cursor-pointer"
                         title="Delete message"
                       >
                         <Trash2 className="h-3.5 w-3.5 sm:h-3 sm:w-3" />
@@ -499,6 +527,63 @@ export function TaskChatSection({
         imageUrl={lightboxUrl}
         fileName={lightboxName}
       />
+
+      {/* Delete Confirmation Modal (Telegram Style) */}
+      {commentToDelete && mounted &&
+        createPortal(
+          <div
+            data-confirm-dialog="true"
+            role="dialog"
+            aria-modal="true"
+            className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in-0 duration-150"
+            onClick={() => setCommentToDelete(null)}
+          >
+            <div
+              className="w-full max-w-sm rounded-2xl bg-card p-5 border border-border/80 shadow-2xl space-y-4 animate-in zoom-in-95 duration-150"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-start gap-3.5">
+                <div className="p-2.5 rounded-full bg-destructive/10 text-destructive shrink-0 mt-0.5">
+                  <Trash2 className="h-5 w-5" />
+                </div>
+                <div className="space-y-1 min-w-0">
+                  <h4 className="text-sm font-semibold text-foreground">
+                    Delete Message
+                  </h4>
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    Are you sure you want to delete this message? It will be removed for everyone in this task.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-1">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCommentToDelete(null)}
+                  className="h-8 text-xs px-3 rounded-lg cursor-pointer"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="button"
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => {
+                    const id = commentToDelete;
+                    setCommentToDelete(null);
+                    handleDeleteComment(id);
+                  }}
+                  className="h-8 text-xs px-3 rounded-lg font-medium cursor-pointer"
+                >
+                  Delete
+                </Button>
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
     </div>
   );
 }

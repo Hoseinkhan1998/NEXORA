@@ -42,7 +42,9 @@ const DialogContent = React.forwardRef<
         const target = originalEvent?.target as HTMLElement | null;
         if (
           document.querySelector("[data-lightbox]") ||
-          target?.closest?.("[data-lightbox]")
+          document.querySelector("[data-confirm-dialog]") ||
+          target?.closest?.("[data-lightbox]") ||
+          target?.closest?.("[data-confirm-dialog]")
         ) {
           e.preventDefault();
           return;
@@ -54,7 +56,9 @@ const DialogContent = React.forwardRef<
         const target = originalEvent?.target as HTMLElement | null;
         if (
           document.querySelector("[data-lightbox]") ||
-          target?.closest?.("[data-lightbox]")
+          document.querySelector("[data-confirm-dialog]") ||
+          target?.closest?.("[data-lightbox]") ||
+          target?.closest?.("[data-confirm-dialog]")
         ) {
           e.preventDefault();
           return;

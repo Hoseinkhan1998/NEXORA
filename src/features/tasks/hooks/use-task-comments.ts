@@ -152,12 +152,14 @@ export function useTaskComments({
     }
   }, [taskId, isLoadingMore, hasMore]);
 
+  const channelRef = useRef<ReturnType<ReturnType<typeof createClient>["channel"]> | null>(null);
+
   // Real-time subscription for live comments
   useEffect(() => {
     if (!taskId) return;
 
     const supabase = createClient();
-    const channelName = `task:${taskId}:comments:${Math.random().toString(36).slice(2, 7)}`;
+    const channelName = `task-comments-${taskId}`;
 
     const channel = supabase
       .channel(channelName)
@@ -251,12 +253,12 @@ export function useTaskComments({
           event: "DELETE",
           schema: "public",
           table: "task_comments",
-          filter: `task_id=eq.${taskId}`,
         },
         (payload) => {
           const deletedId = (payload.old as { id?: string })?.id;
           if (deletedId) {
             setComments((prev) => {
+              if (!prev.some((c) => c.id === deletedId)) return prev;
               const updated = prev.filter((c) => c.id !== deletedId);
               const entry = taskCommentsCache.get(taskId);
               if (entry) {
@@ -271,9 +273,30 @@ export function useTaskComments({
           }
         }
       )
+      .on("broadcast", { event: "comment_deleted" }, ({ payload }) => {
+        const deletedId = (payload as { id?: string })?.id;
+        if (deletedId) {
+          setComments((prev) => {
+            if (!prev.some((c) => c.id === deletedId)) return prev;
+            const updated = prev.filter((c) => c.id !== deletedId);
+            const entry = taskCommentsCache.get(taskId);
+            if (entry) {
+              taskCommentsCache.set(taskId, {
+                ...entry,
+                comments: updated,
+                timestamp: Date.now(),
+              });
+            }
+            return updated;
+          });
+        }
+      })
       .subscribe();
 
+    channelRef.current = channel;
+
     return () => {
+      channelRef.current = null;
       supabase.removeChannel(channel);
     };
   }, [taskId]);
@@ -310,6 +333,15 @@ export function useTaskComments({
         }
         return updated;
       });
+
+      // Broadcast deletion immediately to other connected team members
+      if (channelRef.current) {
+        channelRef.current.send({
+          type: "broadcast",
+          event: "comment_deleted",
+          payload: { id: commentId },
+        });
+      }
     },
     [taskId]
   );

@@ -123,7 +123,9 @@ CREATE POLICY "Authors and admins can delete task comments"
         )
     );
 
--- 5. Realtime publication
+-- 5. Realtime publication & Full Replica Identity for complete payload delivery in realtime events
+ALTER TABLE public.task_comments REPLICA IDENTITY FULL;
+
 DO $$
 BEGIN
     IF NOT EXISTS (
