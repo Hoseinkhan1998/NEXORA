@@ -39,6 +39,25 @@ export function TelegramSignInButton({
     }
   }, [isTelegram]);
 
+  const [config, setConfig] = React.useState<{ botId: string | null; botUsername: string }>({
+    botId: process.env.NEXT_PUBLIC_TELEGRAM_BOT_ID || null,
+    botUsername: process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME || "Mazin_NEXORAbot",
+  });
+
+  React.useEffect(() => {
+    fetch("/api/auth/telegram")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.botUsername || data.botId) {
+          setConfig({
+            botId: data.botId || process.env.NEXT_PUBLIC_TELEGRAM_BOT_ID || null,
+            botUsername: data.botUsername || "Mazin_NEXORAbot",
+          });
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   async function handleTelegramAuth() {
     setIsLoading(true);
 
@@ -71,8 +90,29 @@ export function TelegramSignInButton({
     }
 
     // 2. Outside Telegram: Standard Web Browser Login via Telegram Login Widget
-    const botId = process.env.NEXT_PUBLIC_TELEGRAM_BOT_ID || "8840552954";
-    const botUsername = process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME || "NexoraTasksBot";
+    const botUsername = config.botUsername || "Mazin_NEXORAbot";
+    const botId = config.botId;
+
+    const isLocalhost =
+      typeof window !== "undefined" &&
+      (window.location.hostname === "localhost" ||
+        window.location.hostname === "127.0.0.1" ||
+        window.location.hostname.endsWith(".local"));
+
+    // Telegram's official OAuth server strictly rejects localhost and domains not registered in @BotFather (/setdomain).
+    // On localhost or if botId is not yet configured, gracefully open the bot directly.
+    if (isLocalhost || !botId) {
+      toast.info("Connecting to Telegram", {
+        description: isLocalhost
+          ? `Direct web widget requires a domain configured in @BotFather (/setdomain). Opening @${botUsername} in Telegram...`
+          : `Opening @${botUsername} in Telegram...`,
+        duration: 5000,
+      });
+      window.open(`https://t.me/${botUsername}`, "_blank");
+      setIsLoading(false);
+      return;
+    }
+
     const tgWindow = window as unknown as {
       Telegram?: {
         Login?: {

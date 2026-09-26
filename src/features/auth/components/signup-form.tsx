@@ -198,8 +198,8 @@ export function SignupForm() {
       <form onSubmit={handleSubmit}>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-            <TelegramSignInButton label="Sign up with Telegram" />
-            <GoogleSignInButton label="Sign up with Google" disabled={isLoading} />
+            <GoogleSignInButton label="Continue with Google" disabled={isLoading} />
+            <TelegramSignInButton label="Continue with Telegram" />
           </div>
 
           <div className="relative my-2">

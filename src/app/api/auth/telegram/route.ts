@@ -134,3 +134,17 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
+
+export async function GET() {
+  const botToken = process.env.TELEGRAM_BOT_TOKEN;
+  const botId =
+    process.env.NEXT_PUBLIC_TELEGRAM_BOT_ID || (botToken ? botToken.split(":")[0] : null);
+  const botUsername =
+    process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME || "Mazin_NEXORAbot";
+
+  return NextResponse.json({
+    botId,
+    botUsername,
+    hasToken: Boolean(botToken),
+  });
+}

@@ -145,7 +145,10 @@ export function LoginForm() {
 
       <form onSubmit={handleSubmit}>
         <CardContent className="space-y-4">
-          <GoogleSignInButton label="Continue with Google" disabled={isLoading} />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            <GoogleSignInButton label="Continue with Google" disabled={isLoading} />
+            <TelegramSignInButton label="Continue with Telegram" />
+          </div>
 
           <div className="relative my-2">
             <div className="absolute inset-0 flex items-center">
@@ -205,22 +208,6 @@ export function LoginForm() {
               </AlertDescription>
             </Alert>
           )}
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-            <TelegramSignInButton label="Sign in with Telegram" />
-            <GoogleSignInButton label="Sign in with Google" disabled={isLoading} />
-          </div>
-
-          <div className="relative my-2">
-            <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t border-border/80" />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-card px-2 text-muted-foreground tracking-wider">
-                Or continue with email
-              </span>
-            </div>
-          </div>
 
           <div className="space-y-2">
             <Label htmlFor="login-email">Email address</Label>
