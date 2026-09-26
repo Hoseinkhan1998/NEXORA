@@ -300,6 +300,32 @@ export function ProfileSettingsCard({ initialProfile }: ProfileSettingsCardProps
                 Email is verified and linked to your authentication provider.
               </p>
             </div>
+
+            {/* Telegram Integration Status */}
+            <div className="space-y-1.5 rounded-lg border border-border/50 bg-muted/20 p-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-medium text-foreground flex items-center gap-1.5">
+                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-sky-500/10 text-sky-500">
+                    ✈️
+                  </span>
+                  Telegram Integration
+                </span>
+                {initialProfile?.telegramId ? (
+                  <span className="inline-flex items-center rounded-full bg-emerald-500/10 px-2 py-0.5 text-[11px] font-medium text-emerald-500 border border-emerald-500/20">
+                    Connected
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
+                    Not Linked
+                  </span>
+                )}
+              </div>
+              <p className="text-[11px] text-muted-foreground">
+                {initialProfile?.telegramId
+                  ? `Linked to Telegram account: ${initialProfile.telegramUsername ? `@${initialProfile.telegramUsername}` : `ID: ${initialProfile.telegramId}`}`
+                  : "Launch NEXORA via Telegram (@NexoraTasksBot) or open the mini app to link your account."}
+              </p>
+            </div>
           </div>
         </CardContent>
 

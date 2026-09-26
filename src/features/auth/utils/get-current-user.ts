@@ -23,7 +23,7 @@ export const getCurrentUser = cache(async function getCurrentUser(): Promise<Cur
   try {
     const { data: profileData } = await supabase
       .from("profiles")
-      .select("id, email, full_name, avatar_url, created_at, updated_at")
+      .select("id, email, full_name, avatar_url, telegram_id, telegram_username, created_at, updated_at")
       .eq("id", user.id)
       .maybeSingle();
 
@@ -53,7 +53,7 @@ export const getCurrentUser = cache(async function getCurrentUser(): Promise<Cur
             },
             { onConflict: "id" }
           )
-          .select("id, email, full_name, avatar_url, created_at, updated_at")
+          .select("id, email, full_name, avatar_url, telegram_id, telegram_username, created_at, updated_at")
           .maybeSingle();
 
         if (createdProfile) {
@@ -77,6 +77,8 @@ export const getCurrentUser = cache(async function getCurrentUser(): Promise<Cur
             activeProfileData.avatar_url ||
             (user.user_metadata?.avatar_url as string | undefined) ||
             null,
+          telegramId: activeProfileData.telegram_id || null,
+          telegramUsername: activeProfileData.telegram_username || null,
           createdAt: activeProfileData.created_at,
           updatedAt: activeProfileData.updated_at,
         }

@@ -2,12 +2,12 @@ import type { NextConfig } from "next";
 
 const cspHeader = `
   default-src 'self';
-  script-src 'self' 'unsafe-eval' 'unsafe-inline';
+  script-src 'self' 'unsafe-eval' 'unsafe-inline' https://telegram.org;
   style-src 'self' 'unsafe-inline';
   img-src 'self' blob: data: https:;
   font-src 'self';
-  connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.openai.com;
-  frame-ancestors 'none';
+  connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.openai.com https://api.telegram.org;
+  frame-ancestors 'self' https://web.telegram.org https://*.telegram.org;
   base-uri 'self';
   form-action 'self';
 `
@@ -18,10 +18,6 @@ const securityHeaders = [
   {
     key: "Strict-Transport-Security",
     value: "max-age=63072000; includeSubDomains; preload",
-  },
-  {
-    key: "X-Frame-Options",
-    value: "DENY",
   },
   {
     key: "X-Content-Type-Options",

@@ -21,12 +21,20 @@ import { resendConfirmationAction } from "../actions/resend-confirmation";
 import { loginSchema, type LoginInput } from "../schemas/auth";
 import { GoogleSignInButton } from "./google-sign-in-button";
 import { toast } from "sonner";
+import { useTelegram } from "@/features/telegram";
 
 export function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const reason = searchParams.get("reason");
   const urlError = searchParams.get("error");
+  const { isTelegram } = useTelegram();
+
+  React.useEffect(() => {
+    if (isTelegram) {
+      router.replace("/tg");
+    }
+  }, [isTelegram, router]);
 
   const [formData, setFormData] = React.useState<LoginInput>({
     email: "",

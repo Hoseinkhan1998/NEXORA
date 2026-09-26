@@ -7,6 +7,7 @@ import { Topbar } from "./topbar";
 import { ProductTourProvider } from "@/features/tour";
 import { BreadcrumbProvider } from "./breadcrumb-context";
 import { generateSlug } from "@/features/workspaces/utils/slug";
+import { TelegramNavBar } from "@/features/telegram";
 
 interface AppShellProps {
   children: React.ReactNode;
@@ -62,10 +63,11 @@ export function AppShell({
               currentWorkspace={currentWorkspace}
               workspaces={workspaces}
             />
-            <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto">
+            <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto pb-20 md:pb-8">
               <div className="mx-auto max-w-6xl w-full">{children}</div>
             </main>
           </div>
+          <TelegramNavBar currentWorkspaceSlug={currentWorkspace?.slug} />
         </div>
       </BreadcrumbProvider>
     </ProductTourProvider>

@@ -5,6 +5,8 @@ export interface UserProfile {
   email: string;
   fullName: string | null;
   avatarUrl: string | null;
+  telegramId?: number | null;
+  telegramUsername?: string | null;
   createdAt: string;
   updatedAt: string;
 }

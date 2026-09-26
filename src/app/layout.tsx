@@ -5,6 +5,8 @@ import { siteConfig } from "@/config/site";
 import { ThemeProvider } from "@/components/theme-provider";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/sonner";
+import { TelegramProvider } from "@/features/telegram";
+import Script from "next/script";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -29,16 +31,19 @@ export default function RootLayout({ children }: RootLayoutProps) {
   return (
     <html lang="en" className={`${fontSans.variable} h-full antialiased`} suppressHydrationWarning>
       <body className="min-h-full flex flex-col bg-background text-foreground font-sans">
+        <Script src="https://telegram.org/js/telegram-web-app.js" strategy="beforeInteractive" />
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
           enableSystem
           disableTransitionOnChange
         >
-          <TooltipProvider>
-            {children}
-            <Toaster />
-          </TooltipProvider>
+          <TelegramProvider>
+            <TooltipProvider>
+              {children}
+              <Toaster />
+            </TooltipProvider>
+          </TelegramProvider>
         </ThemeProvider>
       </body>
     </html>
