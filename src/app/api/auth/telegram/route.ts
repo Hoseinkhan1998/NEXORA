@@ -28,7 +28,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { user: tgUser, startParam } = verification.data;
+    const { user: tgUser } = verification.data;
+    const bodyStartParam = typeof body?.startParam === "string" ? body.startParam : undefined;
+    const startParam = verification.data.startParam || bodyStartParam;
     const email = `tg_${tgUser.id}@telegram.nexora.app`;
 
     // Derive deterministic secure password known only to our server with the bot token secret
@@ -121,14 +123,27 @@ export async function POST(request: NextRequest) {
         redirectPath = `/app/projects/${startParam.replace("project_", "")}`;
       } else if (startParam.startsWith("task_")) {
         redirectPath = `/app/tasks/${startParam.replace("task_", "")}`;
+      } else if (startParam.startsWith("invite_")) {
+        redirectPath = `/invite/${startParam.replace("invite_", "")}`;
       }
     }
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       user: currentUser,
       redirect: redirectPath,
     });
+
+    if (startParam && startParam.startsWith("invite_")) {
+      const inviteToken = startParam.replace("invite_", "");
+      response.cookies.set("nexora_pending_invite_token", inviteToken, {
+        path: "/",
+        maxAge: 86400,
+        sameSite: "lax",
+      });
+    }
+
+    return response;
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Internal server error";
     return NextResponse.json({ error: message }, { status: 500 });

@@ -26,18 +26,6 @@ export function TelegramSignInButton({
   const targetReturn =
     returnTo || searchParams.get("returnTo") || searchParams.get("next") || "/app";
 
-  // Load Telegram widget script dynamically on the web if not already present
-  React.useEffect(() => {
-    if (typeof window === "undefined" || isTelegram) return;
-
-    if (!document.getElementById("telegram-widget-script")) {
-      const script = document.createElement("script");
-      script.id = "telegram-widget-script";
-      script.src = "https://telegram.org/js/telegram-widget.js?22";
-      script.async = true;
-      document.body.appendChild(script);
-    }
-  }, [isTelegram]);
 
   const [config, setConfig] = React.useState<{ botId: string | null; botUsername: string }>({
     botId: process.env.NEXT_PUBLIC_TELEGRAM_BOT_ID || null,
@@ -89,79 +77,31 @@ export function TelegramSignInButton({
       }
     }
 
-    // 2. Outside Telegram: Standard Web Browser Login via Telegram Login Widget
+    // 2. Outside Telegram: Seamlessly launch Telegram bot (with invite start parameter if present)
     const botUsername = config.botUsername || "Mazin_NEXORAbot";
-    const botId = config.botId;
 
-    const isLocalhost =
-      typeof window !== "undefined" &&
-      (window.location.hostname === "localhost" ||
-        window.location.hostname === "127.0.0.1" ||
-        window.location.hostname.endsWith(".local"));
-
-    // Telegram's official OAuth server strictly rejects localhost and domains not registered in @BotFather (/setdomain).
-    // On localhost or if botId is not yet configured, gracefully open the bot directly.
-    if (isLocalhost || !botId) {
-      toast.info("Connecting to Telegram", {
-        description: isLocalhost
-          ? `Direct web widget requires a domain configured in @BotFather (/setdomain). Opening @${botUsername} in Telegram...`
-          : `Opening @${botUsername} in Telegram...`,
-        duration: 5000,
-      });
-      window.open(`https://t.me/${botUsername}`, "_blank");
-      setIsLoading(false);
-      return;
+    let botUrl = `https://t.me/${botUsername}`;
+    const inviteMatch = targetReturn.match(/\/invite\/([a-zA-Z0-9_-]+)/);
+    if (inviteMatch && inviteMatch[1]) {
+      const inviteToken = inviteMatch[1];
+      botUrl = `https://t.me/${botUsername}?start=invite_${inviteToken}`;
+      try {
+        document.cookie = `nexora_pending_invite_token=${inviteToken}; path=/; max-age=86400; SameSite=Lax`;
+      } catch {
+        // Ignore cookie write errors
+      }
     }
 
-    const tgWindow = window as unknown as {
-      Telegram?: {
-        Login?: {
-          auth: (
-            options: { bot_id: string; request_access: boolean },
-            callback: (user: Record<string, string | number> | false) => void
-          ) => void;
-        };
-      };
-    };
+    toast.info("Connecting to Telegram", {
+      description: `Opening @${botUsername}...`,
+      duration: 3500,
+    });
 
-    if (tgWindow.Telegram?.Login?.auth) {
-      tgWindow.Telegram.Login.auth(
-        { bot_id: botId, request_access: true },
-        async (widgetUser) => {
-          if (!widgetUser) {
-            setIsLoading(false);
-            return;
-          }
-
-          try {
-            const res = await fetch("/api/auth/telegram/widget", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                widgetData: widgetUser,
-                returnTo: targetReturn,
-              }),
-            });
-
-            const json = await res.json();
-            if (res.ok && json.success) {
-              toast.success("Successfully logged in with Telegram!");
-              window.location.href = json.redirect || targetReturn;
-            } else {
-              throw new Error(json.error || "Authentication failed");
-            }
-          } catch (err: unknown) {
-            const message = err instanceof Error ? err.message : "Login failed";
-            toast.error("Authentication Error", { description: message });
-            setIsLoading(false);
-          }
-        }
-      );
-    } else {
-      // Fallback if widget script is loading: open bot directly with return link
-      window.open(`https://t.me/${botUsername}`, "_blank");
-      setIsLoading(false);
+    const newTab = window.open(botUrl, "_blank");
+    if (!newTab || newTab.closed || typeof newTab.closed === "undefined") {
+      window.location.href = botUrl;
     }
+    setIsLoading(false);
   }
 
   return (

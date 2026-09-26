@@ -34,11 +34,18 @@ export default function TelegramBridgePage() {
       console.warn("[TG Bridge] WebApp init error:", err);
     }
 
+    // Check for startParam in URL query string or Telegram WebApp initDataUnsafe
+    const searchParams = new URLSearchParams(window.location.search);
+    const urlStartParam = searchParams.get("startapp") || searchParams.get("start_param");
+    const unsafeStartParam = (tg as unknown as { initDataUnsafe?: { start_param?: string } })
+      ?.initDataUnsafe?.start_param;
+    const startParam = urlStartParam || unsafeStartParam;
+
     // Authenticate with server using initData
     fetch("/api/auth/telegram", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ initData }),
+      body: JSON.stringify({ initData, startParam }),
     })
       .then(async (res) => {
         const json = await res.json();

@@ -74,6 +74,39 @@ export async function POST(request: NextRequest) {
 
     if (rawText.startsWith("/start")) {
       const name = from?.first_name || "there";
+      const parts = rawText.split(" ");
+      const startArg = (parts[1] ?? "").trim();
+
+      if (startArg.startsWith("invite_")) {
+        const inviteToken = startArg.replace("invite_", "");
+        const inviteTmaUrl = `${appOrigin}/tg?startapp=${startArg}`;
+        const inviteWebUrl = `${appOrigin}/invite/${inviteToken}`;
+
+        const inviteWelcome =
+          `👋 *Hello ${name}! Welcome to NEXORA.*\n\n` +
+          `🎉 *You have been invited to collaborate on a workspace!*\n\n` +
+          `Tap below to accept your invitation and start collaborating:`;
+
+        await sendTelegramMessage(botToken, chatId, inviteWelcome, {
+          inline_keyboard: [
+            [
+              {
+                text: "🚀 Accept Invitation & Open NEXORA",
+                web_app: { url: inviteTmaUrl },
+              },
+            ],
+            [
+              {
+                text: "🌐 Accept on Web",
+                url: inviteWebUrl,
+              },
+            ],
+          ],
+        });
+
+        return NextResponse.json({ ok: true });
+      }
+
       const welcomeText =
         `👋 *Hello ${name}! Welcome to NEXORA.*\n\n` +
         `Your complete project management & team collaboration hub is now accessible inside Telegram.\n\n` +

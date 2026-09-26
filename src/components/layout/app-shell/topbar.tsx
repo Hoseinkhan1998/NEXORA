@@ -47,8 +47,8 @@ export function Topbar({ user, profile, currentWorkspace, workspaces = [] }: Top
 
       {/* Right section: copilot trigger + theme toggle + notifications + user menu */}
       <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-        {/* AI Copilot trigger */}
-        <div id="tour-copilot-trigger">
+        {/* AI Copilot trigger (hidden on mobile since bottom navigation provides Copilot) */}
+        <div id="tour-copilot-trigger" className="hidden md:flex items-center">
           <CopilotTrigger
             workspaceSlug={currentWorkspace?.slug}
             workspaceName={currentWorkspace?.name}
