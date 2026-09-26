@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { createNotificationSchema } from "../schemas/notification";
 import type { CreateNotificationInput } from "../types";
+import { sendTelegramNotification } from "@/features/telegram";
 
 /**
  * Server-side helper to record and dispatch an in-app notification.
@@ -51,6 +52,21 @@ export async function createNotification(input: CreateNotificationInput): Promis
       console.error("[createNotification] Failed to insert notification:", error);
       return false;
     }
+
+    // Dispatch real-time Telegram notification asynchronously (fire-and-forget)
+    sendTelegramNotification({
+      workspaceId,
+      recipientId,
+      actorId,
+      type,
+      title,
+      message,
+      entityType,
+      entityId,
+      projectId,
+    }).catch((tgErr) => {
+      console.warn("[createNotification] Telegram notification warning:", tgErr);
+    });
 
     return true;
   } catch (err) {

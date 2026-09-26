@@ -27,6 +27,8 @@ import {
   acceptInvitationAction,
   type InvitationDetailsResult,
 } from "@/features/workspaces/actions/accept-invitation";
+import { GoogleSignInButton } from "@/features/auth/components/google-sign-in-button";
+import { TelegramSignInButton } from "@/features/telegram";
 
 interface InviteAcceptanceCardProps {
   token: string;
@@ -144,19 +146,36 @@ export function InviteAcceptanceCard({
             )}
           </Button>
         ) : (
-          <div className="grid grid-cols-2 gap-2.5 w-full">
-            <Button asChild variant="default" className="gap-1.5">
-              <Link href={`/login?returnTo=/invite/${token}`}>
-                <LogIn className="h-4 w-4" />
-                <span>Sign In</span>
-              </Link>
-            </Button>
-            <Button asChild variant="outline" className="gap-1.5">
-              <Link href={`/signup?returnTo=/invite/${token}`}>
-                <UserPlus className="h-4 w-4" />
-                <span>Sign Up</span>
-              </Link>
-            </Button>
+          <div className="flex flex-col gap-2.5 w-full">
+            <TelegramSignInButton
+              label="Join with Telegram"
+              returnTo={`/invite/${token}`}
+            />
+            <GoogleSignInButton
+              label="Join with Google"
+            />
+            <div className="relative my-1">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t border-border/60" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-card px-2 text-muted-foreground text-[10px]">Or with email</span>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-2 w-full">
+              <Button asChild variant="outline" size="sm" className="gap-1.5 text-xs">
+                <Link href={`/login?returnTo=/invite/${token}`}>
+                  <LogIn className="h-3.5 w-3.5" />
+                  <span>Sign In</span>
+                </Link>
+              </Button>
+              <Button asChild variant="outline" size="sm" className="gap-1.5 text-xs">
+                <Link href={`/signup?returnTo=/invite/${token}`}>
+                  <UserPlus className="h-3.5 w-3.5" />
+                  <span>Sign Up</span>
+                </Link>
+              </Button>
+            </div>
           </div>
         )}
 

@@ -107,3 +107,75 @@ export function verifyTelegramInitData(
     return { isValid: false, data: null, error: message };
   }
 }
+
+/**
+ * Validates data received from the official Telegram Login Widget on standard web browsers.
+ * @see https://core.telegram.org/widgets/login#checking-authorization
+ */
+export function verifyTelegramWidgetData(
+  widgetData: Record<string, string | number>,
+  botToken: string,
+  maxAgeSeconds: number = 86400
+): { isValid: boolean; data: TelegramUser | null; error?: string } {
+  if (!widgetData || !botToken) {
+    return { isValid: false, data: null, error: "Missing widgetData or botToken" };
+  }
+
+  try {
+    const receivedHash = String(widgetData.hash || "");
+    if (!receivedHash) {
+      return { isValid: false, data: null, error: "Hash parameter missing in widgetData" };
+    }
+
+    const checkKeys = Object.keys(widgetData)
+      .filter((k) => k !== "hash")
+      .sort();
+
+    const dataCheckArr: string[] = [];
+    for (const key of checkKeys) {
+      const val = widgetData[key];
+      if (val !== undefined && val !== null) {
+        dataCheckArr.push(`${key}=${val}`);
+      }
+    }
+
+    const dataCheckString = dataCheckArr.join("\n");
+
+    // Telegram Login Widget secret_key = SHA256(botToken)
+    const secretKey = crypto.createHash("sha256").update(botToken).digest();
+
+    const calculatedHash = crypto
+      .createHmac("sha256", secretKey)
+      .update(dataCheckString)
+      .digest("hex");
+
+    const calculatedBuffer = Buffer.from(calculatedHash, "hex");
+    const receivedBuffer = Buffer.from(receivedHash, "hex");
+
+    if (
+      calculatedBuffer.length !== receivedBuffer.length ||
+      !crypto.timingSafeEqual(calculatedBuffer, receivedBuffer)
+    ) {
+      return { isValid: false, data: null, error: "Invalid cryptographic signature" };
+    }
+
+    const authTimestamp = Number(widgetData.auth_date);
+    const nowSeconds = Math.floor(Date.now() / 1000);
+    if (maxAgeSeconds > 0 && nowSeconds - authTimestamp > maxAgeSeconds) {
+      return { isValid: false, data: null, error: "Widget login has expired" };
+    }
+
+    const user: TelegramUser = {
+      id: Number(widgetData.id),
+      first_name: String(widgetData.first_name || ""),
+      last_name: widgetData.last_name ? String(widgetData.last_name) : undefined,
+      username: widgetData.username ? String(widgetData.username) : undefined,
+      photo_url: widgetData.photo_url ? String(widgetData.photo_url) : undefined,
+    };
+
+    return { isValid: true, data: user };
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Validation exception";
+    return { isValid: false, data: null, error: message };
+  }
+}

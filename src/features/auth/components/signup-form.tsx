@@ -20,6 +20,7 @@ import { signupAction } from "../actions/signup";
 import { resendConfirmationAction } from "../actions/resend-confirmation";
 import { signupSchema, type SignupInput } from "../schemas/auth";
 import { GoogleSignInButton } from "./google-sign-in-button";
+import { TelegramSignInButton } from "@/features/telegram";
 import { toast } from "sonner";
 
 export function SignupForm() {
@@ -196,7 +197,10 @@ export function SignupForm() {
 
       <form onSubmit={handleSubmit}>
         <CardContent className="space-y-4">
-          <GoogleSignInButton label="Sign up with Google" disabled={isLoading} />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            <TelegramSignInButton label="Sign up with Telegram" />
+            <GoogleSignInButton label="Sign up with Google" disabled={isLoading} />
+          </div>
 
           <div className="relative my-2">
             <div className="absolute inset-0 flex items-center">

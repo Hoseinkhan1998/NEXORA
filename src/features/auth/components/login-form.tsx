@@ -21,20 +21,13 @@ import { resendConfirmationAction } from "../actions/resend-confirmation";
 import { loginSchema, type LoginInput } from "../schemas/auth";
 import { GoogleSignInButton } from "./google-sign-in-button";
 import { toast } from "sonner";
-import { useTelegram } from "@/features/telegram";
+import { TelegramSignInButton } from "@/features/telegram";
 
 export function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const reason = searchParams.get("reason");
   const urlError = searchParams.get("error");
-  const { isTelegram } = useTelegram();
-
-  React.useEffect(() => {
-    if (isTelegram) {
-      router.replace("/tg");
-    }
-  }, [isTelegram, router]);
 
   const [formData, setFormData] = React.useState<LoginInput>({
     email: "",
@@ -212,6 +205,22 @@ export function LoginForm() {
               </AlertDescription>
             </Alert>
           )}
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            <TelegramSignInButton label="Sign in with Telegram" />
+            <GoogleSignInButton label="Sign in with Google" disabled={isLoading} />
+          </div>
+
+          <div className="relative my-2">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t border-border/80" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-card px-2 text-muted-foreground tracking-wider">
+                Or continue with email
+              </span>
+            </div>
+          </div>
 
           <div className="space-y-2">
             <Label htmlFor="login-email">Email address</Label>

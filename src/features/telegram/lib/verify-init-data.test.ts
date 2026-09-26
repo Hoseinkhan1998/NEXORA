@@ -78,3 +78,46 @@ describe("verifyTelegramInitData", () => {
     expect(result.error).toBe("Invalid cryptographic signature");
   });
 });
+
+describe("verifyTelegramWidgetData", () => {
+  const dummyToken = "123456789:ABCdefGhIJKlmNoPQRsTUVwxyZ";
+
+  it("validates widget data payload successfully", async () => {
+    const { verifyTelegramWidgetData } = await import("./verify-init-data");
+    const now = Math.floor(Date.now() / 1000);
+
+    const checkString = `auth_date=${now}\nfirst_name=Alex\nid=5551234\nusername=alex_test`;
+    const secretKey = crypto.createHash("sha256").update(dummyToken).digest();
+    const hash = crypto.createHmac("sha256", secretKey).update(checkString).digest("hex");
+
+    const payload = {
+      id: 5551234,
+      first_name: "Alex",
+      username: "alex_test",
+      auth_date: now,
+      hash,
+    };
+
+    const result = verifyTelegramWidgetData(payload, dummyToken);
+    expect(result.isValid).toBe(true);
+    expect(result.data?.id).toBe(5551234);
+    expect(result.data?.first_name).toBe("Alex");
+    expect(result.data?.username).toBe("alex_test");
+  });
+
+  it("rejects widget data with invalid signature", async () => {
+    const { verifyTelegramWidgetData } = await import("./verify-init-data");
+    const now = Math.floor(Date.now() / 1000);
+
+    const payload = {
+      id: 5551234,
+      first_name: "Alex",
+      auth_date: now,
+      hash: "invalidhash123",
+    };
+
+    const result = verifyTelegramWidgetData(payload, dummyToken);
+    expect(result.isValid).toBe(false);
+  });
+});
+
