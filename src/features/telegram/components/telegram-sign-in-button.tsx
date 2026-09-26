@@ -71,8 +71,8 @@ export function TelegramSignInButton({
     }
 
     // 2. Outside Telegram: Standard Web Browser Login via Telegram Login Widget
-    const botId = "8840552954"; // Bot ID from 8840552954:AAE6_In_-GNiqtsnzIoZ_hTyDzs3oZGPQuc
-    const tgWindow = window as unknown as {
+    const botId = process.env.NEXT_PUBLIC_TELEGRAM_BOT_ID || "8840552954";
+    const botUsername = process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME || "NexoraTasksBot";
       Telegram?: {
         Login?: {
           auth: (
@@ -118,7 +118,7 @@ export function TelegramSignInButton({
       );
     } else {
       // Fallback if widget script is loading: open bot directly with return link
-      window.open("https://t.me/NexoraTasksBot", "_blank");
+      window.open(`https://t.me/${botUsername}`, "_blank");
       setIsLoading(false);
     }
   }
