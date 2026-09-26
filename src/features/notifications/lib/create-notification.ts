@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { createNotificationSchema } from "../schemas/notification";
 import type { CreateNotificationInput } from "../types";
-import { sendTelegramNotification } from "@/features/telegram";
+import { sendTelegramNotification } from "@/features/telegram/lib/send-telegram-notification";
 
 /**
  * Server-side helper to record and dispatch an in-app notification.

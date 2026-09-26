@@ -73,6 +73,7 @@ export function TelegramSignInButton({
     // 2. Outside Telegram: Standard Web Browser Login via Telegram Login Widget
     const botId = process.env.NEXT_PUBLIC_TELEGRAM_BOT_ID || "8840552954";
     const botUsername = process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME || "NexoraTasksBot";
+    const tgWindow = window as unknown as {
       Telegram?: {
         Login?: {
           auth: (
